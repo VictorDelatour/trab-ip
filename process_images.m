@@ -59,6 +59,10 @@ function process_images( folder )
         mean_r = [mean(v(~ind_left,1)), mean(v(~ind_left,2)), mean(v(~ind_left,3))];
         
         %% Plot to check 
+        
+        figure(1)
+        showfig(v_carttm, t_carttm);
+        waitfor(1)
 %         figure(1)
 %         plot3(v(ind_left,1), v(ind_left,2), v(ind_left,3), 'bx'); 
 %         hold on; 
@@ -103,27 +107,27 @@ function process_images( folder )
         %% Get ROIs
         % Left
         
-        image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
-        image = imrotate(image, 90); % Image is rotated
-        mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
-        
-        idx_min_l = 1;
-        idx_max_l = round(x_max/x_resolution);
-        
-        roi_l = get_rois(idx_min_l, idx_max_l, image, mask);
-        
-        %% Right
-        
-        image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
-        image = imrotate(image, 90); % Image is rotated
-        mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
-        
-        ncol = size(image,2);
-        
-        idx_min_r = round(min(x_uni(x_uni>x_max))/x_resolution);
-        idx_max_r = ncol;
-        
-        roi_r = get_rois(idx_min_r, idx_max_r, image, mask);
+%         image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
+%         image = imrotate(image, 90); % Image is rotated
+%         mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
+%         
+%         idx_min_l = 1;
+%         idx_max_l = round(x_max/x_resolution);
+%         
+%         roi_l = get_rois(idx_min_l, idx_max_l, image, mask);
+%         
+%         %% Right
+%         
+%         image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
+%         image = imrotate(image, 90); % Image is rotated
+%         mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
+%         
+%         ncol = size(image,2);
+%         
+%         idx_min_r = round(min(x_uni(x_uni>x_max))/x_resolution);
+%         idx_max_r = ncol;
+%         
+%         roi_r = get_rois(idx_min_r, idx_max_r, image, mask);
         
         
    %% Process each ROI to get information     
