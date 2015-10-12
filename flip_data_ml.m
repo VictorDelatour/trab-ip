@@ -1,8 +1,15 @@
 function flip_data_ml(file_name, to_flip_folder, flipped_folder )
 %%
     file = strcat(to_flip_folder, file_name);
-
-    data_struct = load(file, 'masque_t', 'ProcessedData', 'v_carttm');
+    
+    % No poofing variables in workspace!
+    data_struct = load(file, 'masque_t', 'ProcessedData', 'v_carttm', 't_carttm');
+    
+    masque_t = data_struct.masque_t;
+    ProcessedData = data_struct.ProcessedData;
+    v_carttm = data_struct.v_carttm;
+    t_carttm = data_struct.t_carttm;
+    % ex = matfile(file); % Might solve some stuff?
     
 %     slice = 256;
     

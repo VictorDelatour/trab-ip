@@ -30,13 +30,32 @@ function process_images( folder )
     
     cd(current_dir);
     
-    for im_name = file_names
+    n_files = numel(file_names);
+    n_roi = 2;
+    
+    contrast_GLCM = zeros(n_files, n_roi);
+    correlation_GLCM = zeros(n_files, n_roi);
+    energy_GLCM = zeros(n_files, n_roi);
+    homogeneity_GLCM = zeros(n_files, n_roi);
+    entropy_GLCM = zeros(n_files, n_roi);
+    glob_homogeneity = zeros(n_files, n_roi);
+    loc_homogeneity = zeros(n_files, n_roi);
+    glob_anisotropy = zeros(n_files, n_roi);
+    
+    stats = struct();
+    
+    %%
+    for i = 1:numel(file_names)
          
-        fprintf('%s\n', im_name{1});
-        file_name =  strcat(folder, im_name{1});
-        % You shouldn't poof variable, i.e. you should add a lhs to load
-        load(file_name, 'masque_t', 'ProcessedData', 't_carttm', 'v_carttm');
+        fprintf('%s\n', file_names{i});
+        file_name =  strcat(folder, file_names{i});
         
+        data = load(file_name, 'masque_t', 'ProcessedData', 't_carttm', 'v_carttm');
+        
+        masque_t = data.masque_t;
+        ProcessedData = data.ProcessedData;
+        t_carttm = data.t_carttm;
+        v_carttm = data.v_carttm;
         
         x_resolution = mean(diff(ProcessedData.X_Cube(1,:,1)));
         y_resolution = mean(diff(ProcessedData.Y_Cube(:,1,1)));
@@ -60,9 +79,9 @@ function process_images( folder )
         
         %% Plot to check 
         
-        figure(1)
-        showfig(v_carttm, t_carttm);
-        waitfor(1)
+%         figure(1)
+%         showfig(v_carttm, t_carttm);
+%         waitfor(1)
 %         figure(1)
 %         plot3(v(ind_left,1), v(ind_left,2), v(ind_left,3), 'bx'); 
 %         hold on; 
@@ -87,55 +106,77 @@ function process_images( folder )
 %         slice_ap_r = round(mean_r(1)/x_res);
         
  
-        %%
+        %% Plot left and right ml slices
         
-%         image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
-%         image = imrotate(image, 90);
-%         mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
-%         figure(4)
-%         imshow(mat2gray(image));
-%         waitforbuttonpress;
-%         
-%         image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
-%         image = imrotate(image, 90);
-%         mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
-%         figure(4)
-%         imshow(mat2gray(image));
-% %         waitforbuttonpress;
-%         waitfor(4)
+        image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
+        image = imrotate(image, 90);
+        mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
+        figure(1)
+        imshow(mat2gray(image));
+        waitfor(1)
+        
+        image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
+        image = imrotate(image, 90);
+        mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
+        figure(1)
+        imshow(mat2gray(image));
+        waitfor(1)
         
         %% Get ROIs
-        % Left
         
-%         image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
-%         image = imrotate(image, 90); % Image is rotated
-%         mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
-%         
-%         idx_min_l = 1;
-%         idx_max_l = round(x_max/x_resolution);
-%         
-%         roi_l = get_rois(idx_min_l, idx_max_l, image, mask);
-%         
-%         %% Right
-%         
-%         image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
-%         image = imrotate(image, 90); % Image is rotated
-%         mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
-%         
-%         ncol = size(image,2);
-%         
-%         idx_min_r = round(min(x_uni(x_uni>x_max))/x_resolution);
-%         idx_max_r = ncol;
-%         
-%         roi_r = get_rois(idx_min_r, idx_max_r, image, mask);
+        cort_layer = 10;
+        roi_height = 30;
+        
+        %% Get left ROI
+        
+        image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
+        image = imrotate(image, 90); % Image is rotated
+        mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
+        
+        idx_min_l = 1;
+        idx_max_l = round(x_max/x_resolution);
+        
+        roi_l = get_ml_roi(idx_min_l, idx_max_l, image, mask, cort_layer, roi_height);
+
+        
+        %% Get right ROI
+        
+        image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
+        image = imrotate(image, 90); % Image is rotated
+        mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
+        
+        ncol = size(image,2);
+        
+        idx_min_r = round(min(x_uni(x_uni>x_max))/x_resolution);
+        idx_max_r = ncol;
+        
+        roi_r = get_ml_roi(idx_min_r, idx_max_r, image, mask, cort_layer, roi_height);
         
         
    %% Process each ROI to get information     
-
+                
+        stats_l = get_stats(roi_l);
+        stats_r = get_stats(roi_r);
+        
+        
+        stats(i).file = file_names{i};
+        stats(i).stats_l = stats_l;
+        stats(i).stats_r = stats_r;
+        
+        contrast_GLCM(i,:) = [stats_l.Constrast_GLCM, stats_r.Constrast_GLCM ];
+        correlation_GLCM(i,:) = [stats_l.Correlation_GLCM, stats_r.Correlation_GLCM];
+        energy_GLCM(i,:) = [stats_l.Energy_GLCM, stats_r.Energy_GLCM];
+        homogeneity_GLCM(i,:) = [stats_l.Homogeneity_GLCM, stats_r.Homogeneity_GLCM];
+        entropy_GLCM(i,:) = [stats_l.Entropy_GLCM, stats_r.Entropy_GLCM];
+        glob_homogeneity(i,:) = [stats_l.Glob_Homogeneity, stats_r.Glob_Homogeneity];
+        loc_homogeneity(i,:) = [stats_l.Loc_Homogeneity, stats_r.Loc_Homogeneity];
+        glob_anisotropy(i,:) = [stats_l.Glob_Anisotropy, stats_r.Glob_Anisotropy];
         
        
     end   
     
     %% Combine statistical data and save to file
+    
+
     
 end

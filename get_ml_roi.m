@@ -56,8 +56,8 @@ function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_heigh
     %%
     m_roi = get_masked_roi(ma_cut(:, cols(1):cols(2)), cort_layer, roi_height);
 
-    roi = im_cut(:, cols(1):cols(2));
-    roi(m_roi==0) = 0;
+    roi = mat2gray(im_cut(:, cols(1):cols(2)));
+    roi(m_roi==0) = NaN;
 
     figure(1)
     imshow(mat2gray(roi));
