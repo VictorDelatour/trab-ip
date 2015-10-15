@@ -59,9 +59,9 @@ function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_heigh
     roi = mat2gray(im_cut(:, cols(1):cols(2)));
     roi(m_roi==0) = NaN;
 
-    figure(1)
-    imshow(mat2gray(roi));
-    waitfor(1);
+%     figure(1)
+%     imshow(mat2gray(roi));
+%     waitfor(1);
 
 
 

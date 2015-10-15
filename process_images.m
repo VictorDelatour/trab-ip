@@ -20,7 +20,7 @@
 % process_images(folder);
 % 
 
-function process_images( folder )
+function  process_images( folder )
     
     current_dir = pwd;
     
@@ -33,16 +33,17 @@ function process_images( folder )
     n_files = numel(file_names);
     n_roi = 2;
     
-    contrast_GLCM = zeros(n_files, n_roi);
-    correlation_GLCM = zeros(n_files, n_roi);
-    energy_GLCM = zeros(n_files, n_roi);
-    homogeneity_GLCM = zeros(n_files, n_roi);
-    entropy_GLCM = zeros(n_files, n_roi);
-    glob_homogeneity = zeros(n_files, n_roi);
-    loc_homogeneity = zeros(n_files, n_roi);
-    glob_anisotropy = zeros(n_files, n_roi);
+%     contrast_GLCM = zeros(n_files, n_roi);
+%     correlation_GLCM = zeros(n_files, n_roi);
+%     energy_GLCM = zeros(n_files, n_roi);
+%     homogeneity_GLCM = zeros(n_files, n_roi);
+%     entropy_GLCM = zeros(n_files, n_roi);
+%     glob_homogeneity = zeros(n_files, n_roi);
+%     loc_homogeneity = zeros(n_files, n_roi);
+%     glob_anisotropy = zeros(n_files, n_roi);
     
-    stats = struct();
+%     stats = struct();
+    stats = zeros(n_files, 18);
     
     %%
     for i = 1:numel(file_names)
@@ -108,19 +109,19 @@ function process_images( folder )
  
         %% Plot left and right ml slices
         
-        image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
-        image = imrotate(image, 90);
-        mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
-        figure(1)
-        imshow(mat2gray(image));
-        waitfor(1)
-        
-        image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
-        image = imrotate(image, 90);
-        mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
-        figure(1)
-        imshow(mat2gray(image));
-        waitfor(1)
+%         image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
+%         image = imrotate(image, 90);
+%         mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
+%         figure(1)
+%         imshow(mat2gray(image));
+%         waitfor(1)
+%         
+%         image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
+%         image = imrotate(image, 90);
+%         mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
+%         figure(1)
+%         imshow(mat2gray(image));
+%         waitfor(1)
         
         %% Get ROIs
         
@@ -158,25 +159,37 @@ function process_images( folder )
         stats_l = get_stats(roi_l);
         stats_r = get_stats(roi_r);
         
-        
-        stats(i).file = file_names{i};
-        stats(i).stats_l = stats_l;
-        stats(i).stats_r = stats_r;
-        
-        contrast_GLCM(i,:) = [stats_l.Constrast_GLCM, stats_r.Constrast_GLCM ];
-        correlation_GLCM(i,:) = [stats_l.Correlation_GLCM, stats_r.Correlation_GLCM];
-        energy_GLCM(i,:) = [stats_l.Energy_GLCM, stats_r.Energy_GLCM];
-        homogeneity_GLCM(i,:) = [stats_l.Homogeneity_GLCM, stats_r.Homogeneity_GLCM];
-        entropy_GLCM(i,:) = [stats_l.Entropy_GLCM, stats_r.Entropy_GLCM];
-        glob_homogeneity(i,:) = [stats_l.Glob_Homogeneity, stats_r.Glob_Homogeneity];
-        loc_homogeneity(i,:) = [stats_l.Loc_Homogeneity, stats_r.Loc_Homogeneity];
-        glob_anisotropy(i,:) = [stats_l.Glob_Anisotropy, stats_r.Glob_Anisotropy];
-        
+        %%
+        stats(i, 1:9) = cell2mat(struct2cell(stats_l));
+        stats(i, 10:end) = cell2mat(struct2cell(stats_r));
        
     end   
     
-    %% Combine statistical data and save to file
+    %% Combine statistical data to dataset
     
-
+    l_stats = mat2dataset(stats(:, 1:9));
+    r_stats = mat2dataset(stats(:, 10:end));
+    
+    l_stats.Properties.VarNames = fieldnames(stats_l);
+    r_stats.Properties.VarNames = fieldnames(stats_r);
+    
+    l_stats.file = file_names(:);
+    
+    for i = 1:n_files
+        l_stats.file{i} = l_stats.file{i}(1:7);
+    end
+    
+    
+    r_stats.file = l_stats.file;
+    
+    
+    l_stats.OA = [0; 0; 1; 1; 1; 1; 1; 0; 0; 0];
+    r_stats.OA = l_stats.OA;
+    
+    
+    %% Save to file
+    
+    export(l_stats, 'file', strcat(folder, 'l_stats.txt'));
+    export(r_stats, 'file', strcat(folder, 'r_stats.txt'));
     
 end
