@@ -7,16 +7,32 @@ function [ av_stats ] = get_stats( image )
     
     ind = get_indices(g_image); %% Corrected a small bug!
     
-    stats = get_average_glcm(g_image);
+    
     
     [grad_x, grad_y] = get_gradient(g_image, ind);
+    
+    glcm_stats = get_average_glcm(g_image);
     [homogeneity, anisotropy] = get_hom_ani(g_image, ind, grad_x, grad_y);
+    [H, H_norm] = get_gst(grad_x(ind), grad_y(ind)); 
     
     
-    av_stats = struct('Constrast_GLCM', stats(1), 'Correlation_GLCM', stats(2), 'Energy_GLCM', stats(3), 'Homogeneity_GLCM',...
-    stats(4), 'Entropy_GLCM',stats(5), 'Glob_Homogeneity', homogeneity(1),...
-    'Loc_Homogeneity', homogeneity(2), 'Glob_Anisotropy', anisotropy(1),'Loc_Anisotropy', anisotropy(2));
+    av_stats = struct();
+    av_stats.ConstrastGLCM = glcm_stats(1);
+    av_stats.CorrelationGLCM = glcm_stats(2);
+    av_stats.EnergyGLCM = glcm_stats(3);
+    av_stats.HomogeneityGLCM = glcm_stats(4);
+    av_stats.EntropyGLCM = glcm_stats(5);
+    av_stats.GlobHomogeneity = homogeneity(1);
+    av_stats.LocHomogeneity = homogeneity(2);
+    av_stats.GlobAnisotropy = anisotropy(1);
+    av_stats.LocAnisotropy = anisotropy(2);
+    av_stats.minGST = H(1);
+    av_stats.maxGST = H(2);
+    av_stats.minGSTnorm = H_norm(1);
+    av_stats.maxGSTnorm = H_norm(2);
+    av_stats.laplacianEntropy = get_laplacian_entropy(g_image, ind);
 
+    
 end
 
 % function [ind] = get_indices(image)
@@ -69,18 +85,18 @@ end
 %     
 % end
 
-function [ V, D ] = get_gst( grad_x, grad_y )
-
-    gst = zeros(2,2);
-
-    gst(1,1) = sum(sum(grad_x.*grad_x));
-    gst(2,1) = sum(sum(grad_y.*grad_x));
-    gst(1,2) = gst(2,1);
-    gst(2,2) = sum(sum(grad_y.*grad_y));
-
-    [V,D] = eig(gst);
-
-end
+% function [ V, D ] = get_gst( grad_x, grad_y )
+% 
+%     gst = zeros(2,2);
+% 
+%     gst(1,1) = sum(sum(grad_x.*grad_x));
+%     gst(2,1) = sum(sum(grad_y.*grad_x));
+%     gst(1,2) = gst(2,1);
+%     gst(2,2) = sum(sum(grad_y.*grad_y));
+% 
+%     [V,D] = eig(gst);
+% 
+% end
 
 % function [homogeneity, anisotropy] = get_hom_ani(image, ind, grad_x, grad_y)
 % 
@@ -126,5 +142,3 @@ end
 % 
 %     
 % end
-
-
