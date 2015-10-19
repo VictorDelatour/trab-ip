@@ -39,11 +39,13 @@ function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_heigh
     
     len = size(im_cut, 2);
     
-    if idx_min == 1         % Left part of the tibia
+    % Is the .5*nrow correct? Probably should be ncol!
+    if idx_min < .5*nrow        % Left part of the tibia
         cols = [round(.25*len), len];
-    elseif idx_max == ncol  % Right part of the tibia
+    else                        % Right part of the tibia
         cols = 1 + [0, round(.75*len)];
     end
+    
     
     % Extend the mask to all the lower part below the cortical bone
     row = size(ma_cut,1);

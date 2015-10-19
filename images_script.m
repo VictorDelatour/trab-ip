@@ -9,12 +9,12 @@ process_images(folder);
 
 %% Read datasets
 
-l_stats = dataset('file',strcat(folder, 'l_stats.txt'));
-r_stats = dataset('file',strcat(folder, 'r_stats.txt'));
+lateral_stats = dataset('file',strcat(folder, 'lateral_stats.txt'));
+medial_stats = dataset('file',strcat(folder, 'medial_stats.txt'));
 
 %%
 
-data = l_stats;
+data = lateral_stats;
 factor = data.OA;
 data.OA = nominal(data.OA, {'non-OA', 'OA'});
 
@@ -22,7 +22,7 @@ plot_and_test(data, factor);
 
 %%
 
-data = r_stats;
+data = medial_stats;
 factor = data.OA;
 data.OA = nominal(data.OA, {'non-OA', 'OA'});
 

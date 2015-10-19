@@ -56,12 +56,9 @@ function  process_images( folder )
         masque_t = data.masque_t;
         ProcessedData = data.ProcessedData;
         
-        masque_t = data.masque_t;
-        ProcessedData = data.ProcessedData;
-        
         x_resolution = mean(diff(ProcessedData.X_Cube(1,:,1)));
         y_resolution = mean(diff(ProcessedData.Y_Cube(:,1,1)));
-        z_resolution = mean(diff(ProcessedData.Z_Cube(1,1,:)));
+%         z_resolution = mean(diff(ProcessedData.Z_Cube(1,1,:)));
         
         %% Get slices of reference for the mediolateral and anterioposterior axis
         
@@ -82,57 +79,54 @@ function  process_images( folder )
         
         ncol = size(ProcessedData.DicomCube, 2);
         
-        idx_min_lateral = 1;
+        idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
         idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
         idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
-        idx_max_medial = ncol;
+        idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
         
-        % If this is enough,don't use a function to it...
-        
-        
-        
+        %%
+%         image = imrotate(squeeze(ProcessedData.DicomCube(slice_ml_lateral,:,:)),90);
+        % Too heavy, flip only the image!
         if mean_lateral_x > mean_medial_x
             ProcessedData.DicomCube = flip(ProcessedData.DicomCube,2);
             masque_t = flip(masque_t,2);
     
-            idx_max_lateral = ncol + 1 - idx_max_lateral;
-            idx_min_medial = ncol + 1 - idx_min_medial;
+            len = idx_max_lateral - idx_min_lateral;
+            idx_max_lateral = ncol + 1 - idx_min_lateral;
+            idx_min_lateral = idx_max_lateral - len;
+            
+            len = idx_max_medial - idx_min_medial;
+            idx_min_medial = ncol + 1 - idx_max_medial;
+            idx_max_medial = idx_min_medial + len;
+            
         end
-        
         
         %% Plot to check 
         
-%         figure(1)
-%         showfig(ProcessedData.FinalMesh.Tibia.Cartilage.vertices, ProcessedData.FinalMesh.Tibia.Cartilage.triangles);
-%         waitfor(1)
-%         
-%         figure(1)
-%         showfig(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices, ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.triangles);
-%         waitfor(1)
-
-         
-%         %% Anterio-posterior (not used yet)
-%           % Attention! Do not forget to check if you flip it!
-% %         slice_ap_lateral = round(mean_lateral_x/x_res);
-% %         slice_ap_medial = round(mean_medial_x/x_res);
-%         
-%  
-%         %% Plot left and right ml slices
-%         
-% %         image = squeeze(ProcessedData.DicomCube(slice_ml_l,:,:));
-% %         image = imrotate(image, 90);
-% %         mask = imrotate(squeeze(masque_t(slice_ml_l,:,:)),90);
-% %         figure(1)
-% %         imshow(mat2gray(image));
-% %         waitfor(1)
-% %         
-% %         image = squeeze(ProcessedData.DicomCube(slice_ml_r,:,:));
-% %         image = imrotate(image, 90);
-% %         mask = imrotate(squeeze(masque_t(slice_ml_r,:,:)),90);
-% %         figure(1)
-% %         imshow(mat2gray(image));
-% %         waitfor(1)
-%         
+        
+        %% Anterio-posterior
+        slice_ap_lateral = round(mean_lateral_x/x_resolution);
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_lateral,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_ap_lateral,:)),90);
+        
+        image(mask == 0) = 0;
+        
+        figure(1);
+        imshow(mat2gray(image));
+        
+        [roi] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
+        
+        
+        slice_ap_medial = round(mean_medial_x/x_resolution);
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_medial,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_ap_medial,:)),90);
+        
+        image(mask == 0) = 0;
+        
+        figure(2);
+        imshow(mat2gray(image));
+ 
+        
         %% Get ROIs
         
         cort_layer = 10;
@@ -145,6 +139,10 @@ function  process_images( folder )
         mask = imrotate(squeeze(masque_t(slice_ml_lateral,:,:)),90);
         
         roi_lateral = get_ml_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+        
+        figure(1);
+        imshow(mat2gray(roi_lateral));
+        waitfor(1);
 
         
         %% Get right ROI
@@ -154,6 +152,10 @@ function  process_images( folder )
         mask = imrotate(squeeze(masque_t(slice_ml_medial,:,:)),90);
                
         roi_medial = get_ml_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+        
+        figure(1);
+        imshow(mat2gray(roi_medial));
+        waitfor(1);
         
         
    %% Process each ROI to get information     
@@ -183,11 +185,10 @@ function  process_images( folder )
     for i = 1:n_files
         lateral_stats.file{i} = lateral_stats.file{i}(1:7);
     end
-    
-    
+        
     medial_stats.file = lateral_stats.file;
     
-    lateral_stats.OA = [0; 0; 0; 0; 1;... %ends with AH77
+    lateral_stats.OA = [0; 0; 0; 1;... %ends with AH77
      1; 0; 0; 0; 1;... %ends with BT10
      1; 1; 1; 1; 0;... %ends with H362
      1; 1; 0; 1; 0;... %ends with P296
