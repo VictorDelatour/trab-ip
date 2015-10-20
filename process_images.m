@@ -33,17 +33,8 @@ function  process_images( folder )
     n_files = numel(file_names);
     n_roi = 2;
     
-%     contrast_GLCM = zeros(n_files, n_roi);
-%     correlation_GLCM = zeros(n_files, n_roi);
-%     energy_GLCM = zeros(n_files, n_roi);
-%     homogeneity_GLCM = zeros(n_files, n_roi);
-%     entropy_GLCM = zeros(n_files, n_roi);
-%     glob_homogeneity = zeros(n_files, n_roi);
-%     loc_homogeneity = zeros(n_files, n_roi);
-%     glob_anisotropy = zeros(n_files, n_roi);
-    
-%     stats = struct();
-    stats = zeros(n_files, 28);
+    ml_stats = zeros(n_files, 28);
+    ap_stats = zeros(n_files, 28);
     
     %%
     for i = 1:numel(file_names)
@@ -77,6 +68,9 @@ function  process_images( folder )
         slice_ml_lateral = round(mean_lateral_y/y_resolution);
         slice_ml_medial = round(mean_medial_y/y_resolution);
         
+        slice_ap_lateral = round(mean_lateral_x/x_resolution);
+        slice_ap_medial = round(mean_medial_x/x_resolution);
+        
         ncol = size(ProcessedData.DicomCube, 2);
         
         idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
@@ -99,50 +93,53 @@ function  process_images( folder )
             idx_min_medial = ncol + 1 - idx_max_medial;
             idx_max_medial = idx_min_medial + len;
             
+            slice_ap_lateral = ncol + 1 - slice_ap_lateral;
+            slice_ap_medial = ncol + 1 - slice_ap_medial;
+            
         end
-        
-        %% Plot to check 
         
         
         %% Anterio-posterior
-        slice_ap_lateral = round(mean_lateral_x/x_resolution);
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_lateral,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_ap_lateral,:)),90);
-        
-        image(mask == 0) = 0;
-        
-        figure(1);
-        imshow(mat2gray(image));
-        
-        [roi] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
-        
-        
-        slice_ap_medial = round(mean_medial_x/x_resolution);
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_medial,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_ap_medial,:)),90);
-        
-        image(mask == 0) = 0;
-        
-        figure(2);
-        imshow(mat2gray(image));
- 
-        
-        %% Get ROIs
         
         cort_layer = 10;
         roi_height = 30;
         
+        
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_lateral,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_ap_lateral,:)),90);
+        
+        [roi_ap_lateral] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
+        
+%         figure(1);
+%         imshow(mat2gray(roi_ap_lateral));
+%         title('AP-lateral');
+%         waitfor(1);
+        
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_medial,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_ap_medial,:)),90);
+        
+        [roi_ap_medial] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
+ 
+%         figure(2);
+%         imshow(mat2gray(roi_ap_medial));
+%         title('AP-medial');
+%         waitfor(2);
+        
+        %% Get ROIs
+        
+
         %% Get left ROI
         
         image = squeeze(ProcessedData.DicomCube(slice_ml_lateral,:,:));
         image = imrotate(image, 90); % Image is rotated
         mask = imrotate(squeeze(masque_t(slice_ml_lateral,:,:)),90);
         
-        roi_lateral = get_ml_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+        roi_ml_lateral = get_ml_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
         
-        figure(1);
-        imshow(mat2gray(roi_lateral));
-        waitfor(1);
+%         figure(1);
+%         imshow(mat2gray(roi_ml_lateral));
+%         title('ML-lateral');
+%         waitfor(1);
 
         
         %% Get right ROI
@@ -151,55 +148,63 @@ function  process_images( folder )
         image = imrotate(image, 90); % Image is rotated
         mask = imrotate(squeeze(masque_t(slice_ml_medial,:,:)),90);
                
-        roi_medial = get_ml_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+        roi_ml_medial = get_ml_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
         
-        figure(1);
-        imshow(mat2gray(roi_medial));
-        waitfor(1);
+%         figure(1);
+%         imshow(mat2gray(roi_ml_medial));
+%         title('ML-medial');
+%         waitfor(1);
         
         
    %% Process each ROI to get information     
                 
-        stats_lateral = get_stats(roi_lateral);
-        stats_medial = get_stats(roi_medial);
+        stats_ml_lateral = get_stats(roi_ml_lateral);
+        stats_ml_medial = get_stats(roi_ml_medial);
+        
+        stats_ap_lateral = get_stats(roi_ap_lateral);
+        stats_ap_medial = get_stats(roi_ap_medial);
         
         %%
         
-        n_stats = numel(fieldnames(stats_lateral));
+        n_stats = numel(fieldnames(stats_ml_lateral));
         
-        stats(i, 1:n_stats) = cell2mat(struct2cell(stats_lateral));
-        stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_medial));
+        ml_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_ml_lateral));
+        ml_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_ml_medial));
+        
+        ap_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_ap_lateral));
+        ap_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_ap_medial));
 %        
     end   
     
     %% Combine statistical data to dataset
     
-    lateral_stats = mat2dataset(stats(:, 1:n_stats));
-    medial_stats = mat2dataset(stats(:, (n_stats+1):end));
+    lateral_ml_stats = mat2dataset(ml_stats(:, 1:n_stats));
+    medial_ml_stats = mat2dataset(ml_stats(:, (n_stats+1):end));
+    lateral_ap_stats = mat2dataset(ap_stats(:, 1:n_stats));
+    medial_ap_stats = mat2dataset(ap_stats(:, (n_stats+1):end));
     
-    lateral_stats.Properties.VarNames = fieldnames(stats_lateral);
-    medial_stats.Properties.VarNames = fieldnames(stats_medial);
+    lateral_ml_stats.Properties.VarNames = fieldnames(stats_ml_lateral);
+    medial_ml_stats.Properties.VarNames = fieldnames(stats_ml_medial);
+    lateral_ap_stats.Properties.VarNames = fieldnames(stats_ap_lateral);
+    medial_ap_stats.Properties.VarNames = fieldnames(stats_ap_medial);
     
-    lateral_stats.file = file_names(:);
+    lateral_ml_stats.file = file_names(:);
     
     for i = 1:n_files
-        lateral_stats.file{i} = lateral_stats.file{i}(1:7);
+        lateral_ml_stats.file{i} = lateral_ml_stats.file{i}(1:7);
     end
         
-    medial_stats.file = lateral_stats.file;
-    
-    lateral_stats.OA = [0; 0; 0; 1;... %ends with AH77
-     1; 0; 0; 0; 1;... %ends with BT10
-     1; 1; 1; 1; 0;... %ends with H362
-     1; 1; 0; 1; 0;... %ends with P296
-     0; 0; 1; 0;];
-    
-    medial_stats.OA = lateral_stats.OA;
+    medial_ml_stats.file = lateral_ml_stats.file;
+    lateral_ap_stats.file = lateral_ml_stats.file;
+    medial_ap_stats.file = lateral_ml_stats.file;
+
     
     
     %% Save to file
     
-    export(lateral_stats, 'file', strcat(folder, 'lateral_stats.txt'));
-    export(medial_stats, 'file', strcat(folder, 'medial_stats.txt'));
+    export(lateral_ml_stats, 'file', strcat(folder, 'lateral_ml_stats.txt'));
+    export(medial_ml_stats, 'file', strcat(folder, 'medial_ml_stats.txt'));
+    export(lateral_ap_stats, 'file', strcat(folder, 'lateral_ap_stats.txt'));
+    export(medial_ap_stats, 'file', strcat(folder, 'medial_ap_stats.txt'));
     
 end

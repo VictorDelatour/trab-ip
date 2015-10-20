@@ -1,4 +1,4 @@
-function plot_and_test(data, factor)
+function [sig_vars] = plot_and_test(view, region, data, factor)
 
 nvar = size(data,2) - 2;
 nrow = size(data,1);
@@ -18,18 +18,31 @@ for variable = 1:nvar
     
     var_data = double(data(:, var_list(variable)));
     
+    [P, H] = ranksum(var_data(OA), var_data(non_OA));
+    fig_title = strcat('[',view,', ', region, '] : ', var_list(variable));
+    if P < .05
+        if P <.01
+            fig_title = strcat('$', fig_title, '^{**}', sprintf(' (p = %.3f)',P),'$');
+        else
+            fig_title = strcat('$', fig_title, '^{*}', sprintf(' (p = %.3f)',P),'$');
+        end
+    else
+        fig_title = strcat('$', fig_title, sprintf(' (p = %.3f)',P),'$');
+    end
+            
+    
     figure(1);
     boxplot(var_data, data.OA)
-    title(var_list(variable));
+    title(fig_title, 'Interpreter', 'LaTeX');
     waitforbuttonpress;
-    
-    [H, P] = ranksum(var_data(OA), var_data(non_OA));
-    
+   
     sig_and_p(:,variable) = [H, P];
     
 end
 
-var_list(sig_and_p(2,:) == 1) % Doesn't show anything
+close(1);
+
+sig_vars = var_list(sig_and_p(1,:) == 1); % Doesn't show anything
 
 
 end
