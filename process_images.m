@@ -33,11 +33,20 @@ function  process_images( folder )
     n_files = numel(file_names);
     n_roi = 2;
     
-    ml_stats = zeros(n_files, 28);
-    ap_stats = zeros(n_files, 28);
+    coronal_stats = zeros(n_files, 28);
+    sagittal_stats = zeros(n_files, 28);
+    
+    n_plots = ceil(sqrt(n_files));
+    
+    i_sagittal_medial = 1;
+    i_sagittal_lateral = 2;
+    i_coronal_medial = 3;    
+    i_coronal_lateral = 4;
+
+    
     
     %%
-    for i = 1:numel(file_names)
+    for i = 1:n_files
          
         fprintf('%s\n', file_names{i});
         file_name = strcat(folder, file_names{i});
@@ -51,7 +60,7 @@ function  process_images( folder )
         y_resolution = mean(diff(ProcessedData.Y_Cube(:,1,1)));
 %         z_resolution = mean(diff(ProcessedData.Z_Cube(1,1,:)));
         
-        %% Get slices of reference for the mediolateral and anterioposterior axis
+       %% Get slices of reference for the mediolateral and anterioposterior axis
         
         v_ind_lateral = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.triangles);
         v_ind_medial = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.triangles);
@@ -65,11 +74,11 @@ function  process_images( folder )
         %% Flip data if necessary
         
         % Medio-lateral image of interest based on center of mass
-        slice_ml_lateral = round(mean_lateral_y/y_resolution);
-        slice_ml_medial = round(mean_medial_y/y_resolution);
+        slice_coronal_lateral = round(mean_lateral_y/y_resolution);
+        slice_coronal_medial = round(mean_medial_y/y_resolution);
         
-        slice_ap_lateral = round(mean_lateral_x/x_resolution);
-        slice_ap_medial = round(mean_medial_x/x_resolution);
+        slice_sagittal_lateral = round(mean_lateral_x/x_resolution);
+        slice_sagittal_medial = round(mean_medial_x/x_resolution);
         
         ncol = size(ProcessedData.DicomCube, 2);
         
@@ -79,7 +88,7 @@ function  process_images( folder )
         idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
         
         %%
-%         image = imrotate(squeeze(ProcessedData.DicomCube(slice_ml_lateral,:,:)),90);
+
         % Too heavy, flip only the image!
         if mean_lateral_x > mean_medial_x
             ProcessedData.DicomCube = flip(ProcessedData.DicomCube,2);
@@ -93,118 +102,119 @@ function  process_images( folder )
             idx_min_medial = ncol + 1 - idx_max_medial;
             idx_max_medial = idx_min_medial + len;
             
-            slice_ap_lateral = ncol + 1 - slice_ap_lateral;
-            slice_ap_medial = ncol + 1 - slice_ap_medial;
-            
+            slice_sagittal_lateral = ncol + 1 - slice_sagittal_lateral;
+            slice_sagittal_medial = ncol + 1 - slice_sagittal_medial;
         end
         
-        
-        %% Anterio-posterior
+        %% Params
         
         cort_layer = 10;
         roi_height = 30;
         
+        %% Sagittal        
         
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_lateral,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_ap_lateral,:)),90);
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_lateral,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_sagittal_lateral,:)),90);
         
-        [roi_ap_lateral] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
+        [roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
         
-%         figure(1);
-%         imshow(mat2gray(roi_ap_lateral));
-%         title('AP-lateral');
-%         waitfor(1);
+        figure(i_sagittal_lateral)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_sagittal_lateral)); 
+        title(strcat(file_names{i}(1:7), '-s-l'));
         
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_ap_medial,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_ap_medial,:)),90);
         
-        [roi_ap_medial] = get_roi('antepost', 1, size(image,2), image, mask, cort_layer, roi_height);
+        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial,:)),90);
+        mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial,:)),90);
+        
+        [roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
  
-%         figure(2);
-%         imshow(mat2gray(roi_ap_medial));
-%         title('AP-medial');
-%         waitfor(2);
-        
-        %% Get ROIs
+        figure(i_sagittal_medial)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_sagittal_medial)); 
+        title(strcat(file_names{i}(1:7), '-s-m'));
         
 
-        %% Get left ROI
+        %% Coronal
         
-        image = squeeze(ProcessedData.DicomCube(slice_ml_lateral,:,:));
+        image = squeeze(ProcessedData.DicomCube(slice_coronal_lateral,:,:));
         image = imrotate(image, 90); % Image is rotated
-        mask = imrotate(squeeze(masque_t(slice_ml_lateral,:,:)),90);
+        mask = imrotate(squeeze(masque_t(slice_coronal_lateral,:,:)),90);
         
-        roi_ml_lateral = get_ml_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
-        
-%         figure(1);
-%         imshow(mat2gray(roi_ml_lateral));
-%         title('ML-lateral');
-%         waitfor(1);
+%         roi_coronal_lateral = get_coronal_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+
+        roi_coronal_lateral = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+
+        figure(i_coronal_lateral)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_coronal_lateral)); 
+        title(strcat(file_names{i}(1:7), '-c-l'));
 
         
-        %% Get right ROI
-        
-        image = squeeze(ProcessedData.DicomCube(slice_ml_medial,:,:));
+        image = squeeze(ProcessedData.DicomCube(slice_coronal_medial,:,:));
         image = imrotate(image, 90); % Image is rotated
-        mask = imrotate(squeeze(masque_t(slice_ml_medial,:,:)),90);
+        mask = imrotate(squeeze(masque_t(slice_coronal_medial,:,:)),90);
                
-        roi_ml_medial = get_ml_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+%         roi_coronal_medial = get_coronal_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
         
-%         figure(1);
-%         imshow(mat2gray(roi_ml_medial));
-%         title('ML-medial');
-%         waitfor(1);
+        roi_coronal_medial = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+
+        
+        figure(i_coronal_medial)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_coronal_medial)); 
+        title(strcat(file_names{i}(1:7), '-c-m'));
         
         
    %% Process each ROI to get information     
                 
-        stats_ml_lateral = get_stats(roi_ml_lateral);
-        stats_ml_medial = get_stats(roi_ml_medial);
+        stats_coronal_lateral = get_stats(roi_coronal_lateral);
+        stats_coronal_medial = get_stats(roi_coronal_medial);
         
-        stats_ap_lateral = get_stats(roi_ap_lateral);
-        stats_ap_medial = get_stats(roi_ap_medial);
+        stats_sagittal_lateral = get_stats(roi_sagittal_lateral);
+        stats_sagittal_medial = get_stats(roi_sagittal_medial);
         
         %%
         
-        n_stats = numel(fieldnames(stats_ml_lateral));
+        n_stats = numel(fieldnames(stats_coronal_lateral));
         
-        ml_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_ml_lateral));
-        ml_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_ml_medial));
+        coronal_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_coronal_lateral));
+        coronal_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_coronal_medial));
         
-        ap_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_ap_lateral));
-        ap_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_ap_medial));
+        sagittal_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_sagittal_lateral));
+        sagittal_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_sagittal_medial));
 %        
     end   
     
     %% Combine statistical data to dataset
     
-    lateral_ml_stats = mat2dataset(ml_stats(:, 1:n_stats));
-    medial_ml_stats = mat2dataset(ml_stats(:, (n_stats+1):end));
-    lateral_ap_stats = mat2dataset(ap_stats(:, 1:n_stats));
-    medial_ap_stats = mat2dataset(ap_stats(:, (n_stats+1):end));
+    lateral_coronal_stats = mat2dataset(coronal_stats(:, 1:n_stats));
+    medial_coronal_stats = mat2dataset(coronal_stats(:, (n_stats+1):end));
+    lateral_sagittal_stats = mat2dataset(sagittal_stats(:, 1:n_stats));
+    medial_sagittal_stats = mat2dataset(sagittal_stats(:, (n_stats+1):end));
     
-    lateral_ml_stats.Properties.VarNames = fieldnames(stats_ml_lateral);
-    medial_ml_stats.Properties.VarNames = fieldnames(stats_ml_medial);
-    lateral_ap_stats.Properties.VarNames = fieldnames(stats_ap_lateral);
-    medial_ap_stats.Properties.VarNames = fieldnames(stats_ap_medial);
+    lateral_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_lateral);
+    medial_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_medial);
+    lateral_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_lateral);
+    medial_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_medial);
     
-    lateral_ml_stats.file = file_names(:);
+    lateral_coronal_stats.file = file_names(:);
     
     for i = 1:n_files
-        lateral_ml_stats.file{i} = lateral_ml_stats.file{i}(1:7);
+        lateral_coronal_stats.file{i} = lateral_coronal_stats.file{i}(1:7);
     end
         
-    medial_ml_stats.file = lateral_ml_stats.file;
-    lateral_ap_stats.file = lateral_ml_stats.file;
-    medial_ap_stats.file = lateral_ml_stats.file;
+    medial_coronal_stats.file = lateral_coronal_stats.file;
+    lateral_sagittal_stats.file = lateral_coronal_stats.file;
+    medial_sagittal_stats.file = lateral_coronal_stats.file;
 
     
     
     %% Save to file
     
-    export(lateral_ml_stats, 'file', strcat(folder, 'lateral_ml_stats.txt'));
-    export(medial_ml_stats, 'file', strcat(folder, 'medial_ml_stats.txt'));
-    export(lateral_ap_stats, 'file', strcat(folder, 'lateral_ap_stats.txt'));
-    export(medial_ap_stats, 'file', strcat(folder, 'medial_ap_stats.txt'));
+    export(lateral_coronal_stats, 'file', strcat(folder, 'lateral_coronal_stats.txt'));
+    export(medial_coronal_stats, 'file', strcat(folder, 'medial_coronal_stats.txt'));
+    export(lateral_sagittal_stats, 'file', strcat(folder, 'lateral_sagittal_stats.txt'));
+    export(medial_sagittal_stats, 'file', strcat(folder, 'medial_sagittal_stats.txt'));
     
 end

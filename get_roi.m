@@ -1,8 +1,8 @@
 % 
-% function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_height)
+% function [roi] = get_roi(idx_min, idx_max, image, mask, cort_layer, roi_height)
 % 
 % Author1:      H. Babel (hugo.babel@epfl.ch) 
-% Function:     Get_ml_roi
+% Function:     Get_roi
 % 
 % Description:  Given two boundaries along the mediolateral (ML) axis, the
 % function returns the masked region of interest (ROI) at a depth below the
@@ -23,7 +23,7 @@
 % 
 % 
 
-function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_height)
+function [roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_height)
     
     [nrow, ncol] = size(image);
     
@@ -38,34 +38,52 @@ function [roi] = get_ml_roi(idx_min, idx_max, image, mask, cort_layer, roi_heigh
     ma_cut = mask(min_ro:max_ro, min_co:max_co);
     
     len = size(im_cut, 2);
-    
-    % Is the .5*nrow correct? Probably should be ncol!
-    if idx_min < .5*nrow        % Left part of the tibia
-        cols = [round(.25*len), len];
-    else                        % Right part of the tibia
-        cols = 1 + [0, round(.75*len)];
-    end
-    
-    
-    % Extend the mask to all the lower part below the cortical bone
-    row = size(ma_cut,1);
-    while (sum(ma_cut(row,:)==0)>0)
-        ma_cut(row,:) = 1;
-        row = row - 1;
-    end
+        
+%     if strcmp(region, 'medial')
+%         cols = [round(.25*len), len];
+%     elseif strcmp(region, 'lateral')
+%         cols = 1 + [0, round(.75*len)];
+%     elseif strcmp(region, 'sagittal')
+%           cols = round([.125*len, .875*len]);
+%     end
+%     
+%     row_b = find(diff(sum(ma_cut>0,2))<0,1);
+%     ma_cut(row_b+1:end,:) = 1;
 
+    if strcmp(region, 'sagittal')
+        cols = round([.125*len, .875*len]);
+        
+        row_b = find(diff(sum(ma_cut>0,2))<0,1);
+        ma_cut(row_b+1:end,:) = 1;
+    else
+        if strcmp(region, 'medial')
+            cols = 1 + [0, round(.75*len)];
+        elseif strcmp(region, 'lateral')
+            cols = [round(.25*len), len];
+        else
+            % Output error message
+        end
+        
+        row = size(ma_cut,1);
+        while (sum(ma_cut(row,:)==0)>0)
+            ma_cut(row,:) = 1;
+            row = row - 1;
+        end
+    end
+    
+
+
+    
 
     %%
     m_roi = get_masked_roi(ma_cut(:, cols(1):cols(2)), cort_layer, roi_height);
 
-    roi = mat2gray(im_cut(:, cols(1):cols(2)));
-    roi(m_roi==0) = NaN;
-
-%     figure(1)
-%     imshow(mat2gray(roi));
-%     waitfor(1);
-
-
+    min_ro = max(find(sum(m_roi, 2)>0, 1), 1);
+    max_ro = min(find(sum(m_roi, 2)>0, 1, 'last'), size(m_roi,1));
+    
+    roi = mat2gray(im_cut(min_ro:max_ro, cols(1):cols(2)));
+        
+    roi(m_roi(min_ro:max_ro,:)==0) = NaN;
 
 end
 
@@ -89,16 +107,16 @@ end
 % 
 % 
 
-function [roi] = get_masked_roi(mask, cort_layer, roi_height)
-
-    roi = mask;
-
-    %% Delete upper part of image along border
-    roi((cort_layer+1):end,:) = max(roi((cort_layer+1):end,:) + (roi(1:(end-cort_layer),:)-1),0);
-    roi(1:cort_layer,:) = 0;
-    roi(end,:) = 1;
-
-    %% Delete lower part of image along border
-    roi((cort_layer+roi_height+1):end,:) = roi((cort_layer+roi_height+1):end,:) - roi(1:end-(cort_layer+roi_height),:);
-end
+% function [roi] = get_masked_roi(mask, cort_layer, roi_height)
+% 
+%     roi = mask;
+% 
+%     %% Delete upper part of image along border
+%     roi((cort_layer+1):end,:) = max(roi((cort_layer+1):end,:) + (roi(1:(end-cort_layer),:)-1),0);
+%     roi(1:cort_layer,:) = 0;
+%     roi(end,:) = 1;
+% 
+%     %% Delete lower part of image along border
+%     roi((cort_layer+roi_height+1):end,:) = roi((cort_layer+roi_height+1):end,:) - roi(1:end-(cort_layer+roi_height),:);
+% end
 

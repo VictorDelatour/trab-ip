@@ -7,12 +7,26 @@ folder = '/Users/hugobabel/Desktop/TM CHUV/Data/Prestudy/';
 %%
 process_images(folder);
 
+%% Plot 
+
+hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_medial_rois_cut.fig');
+waitfor(1)
+
+H = hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_lateral_rois_cut.fig');
+waitfor(1)
+
+H = hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_medial_rois_cut.fig');
+waitfor(1)
+
+H = hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_lateral_rois_cut.fig');
+waitfor(1)
+
 %% Read datasets
 
-lateral_ml_stats = dataset('file',strcat(folder, 'lateral_ml_stats.txt'));
-medial_ml_stats = dataset('file',strcat(folder, 'medial_ml_stats.txt'));
-lateral_ap_stats = dataset('file',strcat(folder, 'lateral_ap_stats.txt'));
-medial_ap_stats = dataset('file',strcat(folder, 'medial_ap_stats.txt'));
+lateral_ml_stats = dataset('file',strcat(folder, 'lateral_coronal_stats.txt'));
+medial_ml_stats = dataset('file',strcat(folder, 'medial_coronal_stats.txt'));
+lateral_ap_stats = dataset('file',strcat(folder, 'lateral_sagittal_stats.txt'));
+medial_ap_stats = dataset('file',strcat(folder, 'medial_sagittal_stats.txt'));
 
 %% OA and non-OA separation
 
