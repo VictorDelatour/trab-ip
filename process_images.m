@@ -5,8 +5,8 @@
 % Function:     Process_images
 % 
 % Description:  Reads all .mat files contained in the given folder,
-% computes the region of interest (ROI) for the medio-lateral and
-% antero-posterior slices of the tibia, and computes anisotropy,
+% computes the region of interest (ROI) for the coronal and
+% sagittal slices of the tibia, and computes anisotropy,
 % homogeneity, contrast, energy, entropy and other statistical parameters
 % based on these two ROIs
 % 
@@ -31,13 +31,13 @@ function  process_images( folder )
     cd(current_dir);
     
     n_files = numel(file_names);
-    n_roi = 2;
     
     coronal_stats = zeros(n_files, 28);
     sagittal_stats = zeros(n_files, 28);
     
     n_plots = ceil(sqrt(n_files));
     
+    % Indices for the plots
     i_sagittal_medial = 1;
     i_sagittal_lateral = 2;
     i_coronal_medial = 3;    
@@ -71,7 +71,7 @@ function  process_images( folder )
         mean_medial_x = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1));
         mean_medial_y = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,2));
         
-        %% Flip data if necessary
+        %% Define slices and indices of interest
         
         % Medio-lateral image of interest based on center of mass
         slice_coronal_lateral = round(mean_lateral_y/y_resolution);
@@ -82,12 +82,23 @@ function  process_images( folder )
         
         ncol = size(ProcessedData.DicomCube, 2);
         
-        idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
-        idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
-        idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
-        idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
+        plane_ind = find(abs(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,2)-mean_lateral_y)<=y_resolution);
         
-        %%
+        idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral(plane_ind),1))/x_resolution);
+        idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral(plane_ind),1))/x_resolution);
+        
+%         idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
+%         idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
+
+        plane_ind = find(abs(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,2)-mean_medial_y)<=y_resolution);
+        
+        idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial(plane_ind),1))/x_resolution);
+        idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial(plane_ind),1))/x_resolution);
+        
+%         idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
+%         idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
+        
+        %% Flip data if lateral on the wrong side
 
         % Too heavy, flip only the image!
         if mean_lateral_x > mean_medial_x
@@ -102,6 +113,8 @@ function  process_images( folder )
             idx_min_medial = ncol + 1 - idx_max_medial;
             idx_max_medial = idx_min_medial + len;
             
+            % Not sure if correct...
+            % This is what we should do if we didn't flip the data?
             slice_sagittal_lateral = ncol + 1 - slice_sagittal_lateral;
             slice_sagittal_medial = ncol + 1 - slice_sagittal_medial;
         end
@@ -118,22 +131,11 @@ function  process_images( folder )
         
         [roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
         
-        figure(i_sagittal_lateral)
-        subplot(n_plots, n_plots, i); 
-        imshow(mat2gray(roi_sagittal_lateral)); 
-        title(strcat(file_names{i}(1:7), '-s-l'));
-        
         
         image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial,:)),90);
         mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial,:)),90);
         
         [roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
- 
-        figure(i_sagittal_medial)
-        subplot(n_plots, n_plots, i); 
-        imshow(mat2gray(roi_sagittal_medial)); 
-        title(strcat(file_names{i}(1:7), '-s-m'));
-        
 
         %% Coronal
         
@@ -142,13 +144,7 @@ function  process_images( folder )
         mask = imrotate(squeeze(masque_t(slice_coronal_lateral,:,:)),90);
         
 %         roi_coronal_lateral = get_coronal_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
-
         roi_coronal_lateral = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
-
-        figure(i_coronal_lateral)
-        subplot(n_plots, n_plots, i); 
-        imshow(mat2gray(roi_coronal_lateral)); 
-        title(strcat(file_names{i}(1:7), '-c-l'));
 
         
         image = squeeze(ProcessedData.DicomCube(slice_coronal_medial,:,:));
@@ -156,9 +152,23 @@ function  process_images( folder )
         mask = imrotate(squeeze(masque_t(slice_coronal_medial,:,:)),90);
                
 %         roi_coronal_medial = get_coronal_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
-        
         roi_coronal_medial = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
 
+  %% Plot
+        figure(i_sagittal_lateral)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_sagittal_lateral)); 
+        title(strcat(file_names{i}(1:7), '-s-l'));
+   
+        figure(i_sagittal_medial)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_sagittal_medial)); 
+        title(strcat(file_names{i}(1:7), '-s-m'));
+  
+        figure(i_coronal_lateral)
+        subplot(n_plots, n_plots, i); 
+        imshow(mat2gray(roi_coronal_lateral)); 
+        title(strcat(file_names{i}(1:7), '-c-l'));
         
         figure(i_coronal_medial)
         subplot(n_plots, n_plots, i); 
