@@ -32,8 +32,8 @@ function  process_images( folder )
     
     n_files = numel(file_names);
     
-    coronal_stats = zeros(n_files, 28);
-    sagittal_stats = zeros(n_files, 28);
+    coronal_stats = zeros(n_files, 30);
+    sagittal_stats = zeros(n_files, 30);
     
     n_plots = ceil(sqrt(n_files));
     
@@ -87,17 +87,11 @@ function  process_images( folder )
         idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral(plane_ind),1))/x_resolution);
         idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral(plane_ind),1))/x_resolution);
         
-%         idx_min_lateral = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
-%         idx_max_lateral = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1))/x_resolution);
-
         plane_ind = find(abs(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,2)-mean_medial_y)<=y_resolution);
         
         idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial(plane_ind),1))/x_resolution);
         idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial(plane_ind),1))/x_resolution);
-        
-%         idx_min_medial = round(min(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
-%         idx_max_medial = round(max(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1))/x_resolution);
-        
+            
         %% Flip data if lateral on the wrong side
 
         % Too heavy, flip only the image!
@@ -115,50 +109,60 @@ function  process_images( folder )
             
             % Not sure if correct...
             % This is what we should do if we didn't flip the data?
-            slice_sagittal_lateral = ncol + 1 - slice_sagittal_lateral;
-            slice_sagittal_medial = ncol + 1 - slice_sagittal_medial;
+            temp = slice_sagittal_lateral;
+            slice_sagittal_lateral = ncol + 1 - slice_sagittal_medial;
+            slice_sagittal_medial = ncol + 1 - temp;
         end
         
         %% Params
         
         cort_layer = 10;
-        roi_height = 30;
+        roi_height = 50;
         
-        %% Sagittal        
+        %% Sagittal  lateral      
         
         image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_lateral,:)),90);
         mask = imrotate(squeeze(masque_t(:,slice_sagittal_lateral,:)),90);
         
-        [roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
+        [score_s_l , roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
         
+        %% Sagittal medial
         
         image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial,:)),90);
         mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial,:)),90);
         
-        [roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
+        [score_s_m, roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
 
-        %% Coronal
+        %% Coronal Lateral
         
         image = squeeze(ProcessedData.DicomCube(slice_coronal_lateral,:,:));
         image = imrotate(image, 90); % Image is rotated
         mask = imrotate(squeeze(masque_t(slice_coronal_lateral,:,:)),90);
         
-%         roi_coronal_lateral = get_coronal_roi(idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
-        roi_coronal_lateral = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+        [score_c_l, roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
 
+        %% Coronal Medial
         
         image = squeeze(ProcessedData.DicomCube(slice_coronal_medial,:,:));
         image = imrotate(image, 90); % Image is rotated
         mask = imrotate(squeeze(masque_t(slice_coronal_medial,:,:)),90);
                
-%         roi_coronal_medial = get_coronal_roi(idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
-        roi_coronal_medial = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+        [score_c_m, roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
 
+        %% Can we proceed with stats?
+        
+        thresh = .1;
+        
+        if max([score_s_l, score_s_m, score_c_l, score_c_m])>= thresh;
+            continue
+        end
+        
   %% Plot
         figure(i_sagittal_lateral)
         subplot(n_plots, n_plots, i); 
         imshow(mat2gray(roi_sagittal_lateral)); 
         title(strcat(file_names{i}(1:7), '-s-l'));
+        
    
         figure(i_sagittal_medial)
         subplot(n_plots, n_plots, i); 
@@ -198,15 +202,20 @@ function  process_images( folder )
     
     %% Combine statistical data to dataset
     
-    lateral_coronal_stats = mat2dataset(coronal_stats(:, 1:n_stats));
-    medial_coronal_stats = mat2dataset(coronal_stats(:, (n_stats+1):end));
-    lateral_sagittal_stats = mat2dataset(sagittal_stats(:, 1:n_stats));
-    medial_sagittal_stats = mat2dataset(sagittal_stats(:, (n_stats+1):end));
-    
-    lateral_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_lateral);
-    medial_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_medial);
-    lateral_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_lateral);
-    medial_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_medial);
+    lateral_coronal_stats = array2table(coronal_stats(:, 1:n_stats), 'VariableNames', fieldnames(stats_coronal_lateral));
+    medial_coronal_stats = array2table(coronal_stats(:, (n_stats+1):end), 'VariableNames', fieldnames(stats_coronal_medial));
+    lateral_sagittal_stats = array2table(sagittal_stats(:, 1:n_stats), 'VariableNames', fieldnames(stats_sagittal_lateral));
+    medial_sagittal_stats = array2table(sagittal_stats(:, (n_stats+1):end), 'VariableNames', fieldnames(stats_sagittal_medial));
+        
+%     lateral_coronal_stats = mat2dataset(coronal_stats(:, 1:n_stats));
+%     medial_coronal_stats = mat2dataset(coronal_stats(:, (n_stats+1):end));
+%     lateral_sagittal_stats = mat2dataset(sagittal_stats(:, 1:n_stats));
+%     medial_sagittal_stats = mat2dataset(sagittal_stats(:, (n_stats+1):end));
+%     
+%     lateral_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_lateral);
+%     medial_coronal_stats.Properties.VarNames = fieldnames(stats_coronal_medial);
+%     lateral_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_lateral);
+%     medial_sagittal_stats.Properties.VarNames = fieldnames(stats_sagittal_medial);
     
     lateral_coronal_stats.file = file_names(:);
     
@@ -222,9 +231,9 @@ function  process_images( folder )
     
     %% Save to file
     
-    export(lateral_coronal_stats, 'file', strcat(folder, 'lateral_coronal_stats.txt'));
-    export(medial_coronal_stats, 'file', strcat(folder, 'medial_coronal_stats.txt'));
-    export(lateral_sagittal_stats, 'file', strcat(folder, 'lateral_sagittal_stats.txt'));
-    export(medial_sagittal_stats, 'file', strcat(folder, 'medial_sagittal_stats.txt'));
+    writetable(lateral_coronal_stats, strcat(folder, 'lateral_coronal_stats.txt'));
+    writetable(medial_coronal_stats, strcat(folder, 'medial_coronal_stats.txt'));
+    writetable(lateral_sagittal_stats, strcat(folder, 'lateral_sagittal_stats.txt'));
+    writetable(medial_sagittal_stats, strcat(folder, 'medial_sagittal_stats.txt'));
     
 end

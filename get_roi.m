@@ -23,7 +23,7 @@
 % 
 % 
 
-function [roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_height)
+function [score, roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_height)
     
     [nrow, ncol] = size(image);
     
@@ -39,17 +39,6 @@ function [roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_
     
     len = size(im_cut, 2);
         
-%     if strcmp(region, 'medial')
-%         cols = [round(.25*len), len];
-%     elseif strcmp(region, 'lateral')
-%         cols = 1 + [0, round(.75*len)];
-%     elseif strcmp(region, 'sagittal')
-%           cols = round([.125*len, .875*len]);
-%     end
-%     
-%     row_b = find(diff(sum(ma_cut>0,2))<0,1);
-%     ma_cut(row_b+1:end,:) = 1;
-
     if strcmp(region, 'sagittal')
         cols = round([.125*len, .875*len]);
         
@@ -84,6 +73,10 @@ function [roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_
     roi = mat2gray(im_cut(min_ro:max_ro, cols(1):cols(2)));
         
     roi(m_roi(min_ro:max_ro,:)==0) = NaN;
+    
+    %% Compute acceptability score
+    % Measure # cols s.t. height of roi is not ~ maximal
+    score = sum(sum(m_roi(min_ro:max_ro,:)>0,1) < .9*roi_height)/size(roi,2); % 
 
 end
 

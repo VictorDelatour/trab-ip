@@ -17,6 +17,7 @@ function [ av_stats ] = get_stats( image )
     
     
     av_stats = struct();
+    av_stats.mean = mean(g_image(~isnan(g_image)));
     av_stats.ConstrastGLCM = glcm_stats(1);
     av_stats.CorrelationGLCM = glcm_stats(2);
     av_stats.EnergyGLCM = glcm_stats(3);
