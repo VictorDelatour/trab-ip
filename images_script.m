@@ -9,16 +9,16 @@ process_images(folder);
 
 %% Plot 
 
-hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_medial_rois_cut.fig');
+hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_medial_rois_cut_50.fig');
 waitfor(1)
 
-hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_lateral_rois_cut.fig');
+hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_lateral_rois_cut_50.fig');
 waitfor(1)
 
-hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_medial_rois_cut.fig');
+hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_medial_rois_cut_50.fig');
 waitfor(1)
 
-hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_lateral_rois_cut.fig');
+hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_lateral_rois_cut_50.fig');
 waitfor(1)
 
 %% Read datasets
