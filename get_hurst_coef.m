@@ -1,6 +1,6 @@
 function [ hurst ] = get_hurst_coef(x, y, var)
 
-    n_scale = numel(x)-4; % Radius should be 13, with 9 scales
+    n_scale = numel(x) - 4; % Radius should be 13, with 9 scales
     hurst = zeros(1,n_scale);
     
     ind = find(~isnan(y));

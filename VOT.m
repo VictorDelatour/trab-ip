@@ -65,7 +65,10 @@ v_dist = 1:radius;
 v_ang = ((1:n_angle)./f_angle)./180*pi;
 
 hurst_var = zeros(n_angle, n_scale);
-hurst_dif = zeros(n_angle, n_scale);
+% hurst_dif = zeros(n_angle, n_scale);
+hurst_dif = zeros(n_angle,1);
+
+im_sd = std(image(:));
 
 %%
 for ap = 1:n_angle
@@ -82,10 +85,35 @@ for ap = 1:n_angle
         end
     end
     
-    % Fit linear regression for each loglog data
-        
+    % Original HOT method divides by sd of all pixel brightness values
+    max_diff(ap,:) = max_diff(ap,:) / im_sd;
+    
+    
+    % Get coef by linear regression for each loglog data
     hurst_var(ap, :) = get_hurst_coef(v_dist, variance(ap,:), 'VOT');
-    hurst_dif(ap, :) = get_hurst_coef(v_dist, max_diff(ap,:), 'HOT');
+    
+
+    % HOT coef are computed by fitting a linear regression for every angle
+    ind = find(~isnan(max_diff(ap,:)));
+    pfit = polyfit(log(v_dist(ind)), log(max_diff(ap,ind)), 1);
+    pval = polyval(pfit, log(v_dist(ind)));
+    
+    figure(1);
+    plot(log(v_dist(ind)), log(max_diff(ap,ind)), 'o', log(v_dist(ind)), pval, '-r' );
+    waitforbuttonpress;
+    
+    % Compute R^2 for linear regression
+    resid = log(max_diff(ap, ind))-pval;
+    SSresid = sum(resid.^2);
+    SStotal = (numel(resid)-1) * var(log(v_dist(ind)));
+    rsq = 1- SSresid/SStotal;
+    rsq_adj = 1-SSresid/SStotal * (numel(resid)-1)/(numel(resid)-numel(pfit));
+    
+    if rsq_adj > .95
+        hurst_dif(ap) = pfit(1);
+    else
+        hurst_dif(ap) = NaN;
+    end
     
     
 end

@@ -28,9 +28,17 @@ for scale = 1:n_scale
    fprintf('Scale %i, FD = %f, S_tr = %f, S_td = %f\n', scale,  FD_scale(scale), S_tr_scale(scale), S_td_scale(scale));
 end
 
-FD = [mean(FD_scale(1:3)), mean(FD_scale(4:6)), mean(FD_scale(7:9))];
-S_tr = [mean(S_tr_scale(1:3)), mean(S_tr_scale(4:6)), mean(S_tr_scale(7:9))];
-S_td = round([mean(S_td_scale(1:3)), mean(S_td_scale(4:6)), mean(S_td_scale(7:9))]/pi*180);
+if strcmp(var, 'VOT')
+    FD = [mean(FD_scale(1:3)), mean(FD_scale(4:6)), mean(FD_scale(7:9))];
+    S_tr = [mean(S_tr_scale(1:3)), mean(S_tr_scale(4:6)), mean(S_tr_scale(7:9))];
+    S_td = round([mean(S_td_scale(1:3)), mean(S_td_scale(4:6)), mean(S_td_scale(7:9))]/pi*180);
+elseif strcmp(var, 'HOT')
+    FD = FD_scale;
+    S_tr = S_tr_scale;
+    S_td = S_td_scale;
+else
+    % error
+end
 
 end
 
