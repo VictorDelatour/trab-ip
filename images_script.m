@@ -22,11 +22,15 @@ hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/coronal_lateral_rois_cu
 waitfor(1)
 
 %% Read datasets
+lateral_coronal_stats = readtable(strcat(folder, 'lateral_coronal_stats.txt'));
+medial_coronal_stats = readtable(strcat(folder, 'medial_coronal_stats.txt'));
+lateral_sagittal_stats = readtable(strcat(folder, 'lateral_sagittal_stats.txt'));
+medial_sagittal_stats = readtable(strcat(folder, 'medial_sagittal_stats.txt'));
 
-lateral_coronal_stats = dataset('file',strcat(folder, 'lateral_coronal_stats.txt'));
-medial_coronal_stats = dataset('file',strcat(folder, 'medial_coronal_stats.txt'));
-lateral_sagittal_stats = dataset('file',strcat(folder, 'lateral_sagittal_stats.txt'));
-medial_sagittal_stats = dataset('file',strcat(folder, 'medial_sagittal_stats.txt'));
+% lateral_coronal_stats = dataset('file',strcat(folder, 'lateral_coronal_stats.txt'));
+% medial_coronal_stats = dataset('file',strcat(folder, 'medial_coronal_stats.txt'));
+% lateral_sagittal_stats = dataset('file',strcat(folder, 'lateral_sagittal_stats.txt'));
+% medial_sagittal_stats = dataset('file',strcat(folder, 'medial_sagittal_stats.txt'));
 
 %% OA and non-OA separation
 
@@ -43,7 +47,7 @@ for i = 1:numel(used_files)
     row = find(strcmp(used_files(i), lateral_coronal_stats.file));
     
     if ~isempty(row)
-        if table2array(dataset2table(lateral_coronal_stats(row,1:end-1)))>0
+        if max(table2array(lateral_coronal_stats(row,1:end-1)))>0
             to_process = [to_process, row];
         end
     end

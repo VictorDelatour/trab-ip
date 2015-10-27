@@ -9,14 +9,14 @@ OA = OA(OA>0);
 non_OA = (1:nrow) .* (~factor)';
 non_OA = non_OA(non_OA>0);
 
-var_list = data.Properties.VarNames;
+var_list = data.Properties.VariableNames;
 sig_and_p = zeros(2, nvar);
 
 %%
 
 for variable = 1:nvar
     
-    var_data = double(data(:, var_list(variable)));
+    var_data = double(table2array(data(:, var_list(variable))));
     
     [P, H] = ranksum(var_data(OA), var_data(non_OA));
     fig_title = strcat('[',view,', ', region, '] : ', var_list(variable));
