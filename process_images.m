@@ -32,8 +32,8 @@ function  process_images( folder )
     
     n_files = numel(file_names);
     
-    coronal_stats = zeros(n_files, 30);
-    sagittal_stats = zeros(n_files, 30);
+    coronal_stats = zeros(n_files, 38);
+    sagittal_stats = zeros(n_files, 38);
     
     n_plots = ceil(sqrt(n_files));
     
@@ -125,13 +125,15 @@ function  process_images( folder )
         mask = imrotate(squeeze(masque_t(:,slice_sagittal_lateral,:)),90);
         
         [score_s_l , roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
-        
+        [~, bin_roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
+
         %% Sagittal medial
         
         image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial,:)),90);
         mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial,:)),90);
         
         [score_s_m, roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
+        [~, bin_roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
 
         %% Coronal Lateral
         
@@ -141,6 +143,8 @@ function  process_images( folder )
         
         [score_c_l, roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
 
+        [~, bin_roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, binarize(mat2gray(image)), mask, cort_layer, roi_height);
+
         %% Coronal Medial
         
         image = squeeze(ProcessedData.DicomCube(slice_coronal_medial,:,:));
@@ -149,6 +153,7 @@ function  process_images( folder )
                
         [score_c_m, roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
 
+        [~, bin_roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, binarize(mat2gray(image)), mask, cort_layer, roi_height);
         %% Can we proceed with stats?
         
         thresh = .1;
@@ -179,14 +184,36 @@ function  process_images( folder )
         imshow(mat2gray(roi_coronal_medial)); 
         title(strcat(file_names{i}(1:7), '-c-m'));
         
+        % Binary version
+        figure(i_sagittal_lateral+4)
+        subplot(n_plots, n_plots, i); 
+        imshow(bin_roi_sagittal_lateral); 
+        title(strcat(file_names{i}(1:7), '-s-l'));
+        
+   
+        figure(i_sagittal_medial+4)
+        subplot(n_plots, n_plots, i); 
+        imshow(bin_roi_sagittal_medial); 
+        title(strcat(file_names{i}(1:7), '-s-m'));
+  
+        figure(i_coronal_lateral+4)
+        subplot(n_plots, n_plots, i); 
+        imshow(bin_roi_coronal_lateral); 
+        title(strcat(file_names{i}(1:7), '-c-l'));
+        
+        figure(i_coronal_medial+4)
+        subplot(n_plots, n_plots, i); 
+        imshow(bin_roi_coronal_medial); 
+        title(strcat(file_names{i}(1:7), '-c-m'));
+        
         
    %% Process each ROI to get information     
                 
-        stats_coronal_lateral = get_stats(roi_coronal_lateral);
-        stats_coronal_medial = get_stats(roi_coronal_medial);
+        stats_coronal_lateral = get_stats(roi_coronal_lateral, bin_roi_coronal_lateral);
+        stats_coronal_medial = get_stats(roi_coronal_medial, bin_roi_coronal_medial);
         
-        stats_sagittal_lateral = get_stats(roi_sagittal_lateral);
-        stats_sagittal_medial = get_stats(roi_sagittal_medial);
+        stats_sagittal_lateral = get_stats(roi_sagittal_lateral, bin_roi_sagittal_lateral);
+        stats_sagittal_medial = get_stats(roi_sagittal_medial, bin_roi_sagittal_medial);
         
         %%
         

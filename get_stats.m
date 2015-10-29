@@ -1,4 +1,4 @@
-function [ av_stats ] = get_stats( image )
+function [ av_stats ] = get_stats( image, binary_image)
 
     g_image = mat2gray(image);
     g_image(isnan(image)) = NaN;
@@ -7,17 +7,19 @@ function [ av_stats ] = get_stats( image )
     
     ind = get_indices(g_image); %% Corrected a small bug!
     
-    
-    
     [grad_x, grad_y] = get_gradient(g_image, ind);
     
     glcm_stats = get_average_glcm(g_image);
     [homogeneity, anisotropy] = get_hom_ani(g_image, ind, grad_x, grad_y);
     [H, H_norm] = get_gst(grad_x(ind), grad_y(ind)); 
+    lacunarity = get_lacunarity(binary_image);
     
-    
+    %%
     av_stats = struct();
     av_stats.mean = mean(g_image(~isnan(g_image)));
+    av_stats.variance = var(g_image(~isnan(g_image)));
+    av_stats.skewness = skewness(g_image(~isnan(g_image)), 0);
+    av_stats.kurtosis = kurtosis(g_image(~isnan(g_image)), 0);
     av_stats.ConstrastGLCM = glcm_stats(1);
     av_stats.CorrelationGLCM = glcm_stats(2);
     av_stats.EnergyGLCM = glcm_stats(3);
@@ -32,6 +34,7 @@ function [ av_stats ] = get_stats( image )
     av_stats.minGSTnorm = H_norm(1);
     av_stats.maxGSTnorm = H_norm(2);
     av_stats.laplacianEntropy = get_laplacian_entropy(g_image, ind);
+    av_stats.lacunarity = mean(lacunarity);
 
     
 end
