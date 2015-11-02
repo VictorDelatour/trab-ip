@@ -13,6 +13,22 @@ function [ av_stats ] = get_stats( image, binary_image)
     [homogeneity, anisotropy] = get_hom_ani(g_image, ind, grad_x, grad_y);
     [H, H_norm] = get_gst(grad_x(ind), grad_y(ind)); 
     lacunarity = get_lacunarity(binary_image);
+    [~, ACF_ratio] = get_ACF(g_image);
+    %%
+%     fprintf('Computing HOT\n');
+%     [FD_HOT, S_tr_HOT, S_td_HOT] = HOT(g_image, 7);
+    FD_HOT = 0;
+    S_tr_HOT = 0;
+    S_td_HOT = 0;
+%     fprintf('Done\n');
+    
+    %%
+%     fprintf('Computing VOT\n');
+%     [FD_VOT, S_tr_VOT, S_td_VOT] = VOT(g_image, 7);
+    FD_VOT = 0;
+    S_tr_VOT = 0;
+    S_td_VOT = 0;
+%     fprintf('Done\n');
     
     %%
     av_stats = struct();
@@ -35,6 +51,15 @@ function [ av_stats ] = get_stats( image, binary_image)
     av_stats.maxGSTnorm = H_norm(2);
     av_stats.laplacianEntropy = get_laplacian_entropy(g_image, ind);
     av_stats.lacunarity = mean(lacunarity);
+    av_stats.meanACFratio = mean(ACF_ratio);
+    av_stats.FD_HOT = FD_HOT;
+    av_stats.StrHOT = S_tr_HOT;
+    av_stats.StdHOT = S_td_HOT;
+    av_stats.FDVOT = FD_VOT;
+    av_stats.StrVOT = S_tr_VOT;
+    av_stats.StdVOT = S_td_VOT;
+    
+
 
     
 end

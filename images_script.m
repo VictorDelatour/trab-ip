@@ -5,6 +5,7 @@ folder = '/Users/hugobabel/Desktop/TM CHUV/Data/Prestudy/';
 
 
 %%
+warning('OFF', 'images:graycomatrix:scaledImageContainsNan');
 process_images(folder);
 
 %% Plot 
@@ -27,10 +28,7 @@ medial_coronal_stats = readtable(strcat(folder, 'medial_coronal_stats.txt'));
 lateral_sagittal_stats = readtable(strcat(folder, 'lateral_sagittal_stats.txt'));
 medial_sagittal_stats = readtable(strcat(folder, 'medial_sagittal_stats.txt'));
 
-% lateral_coronal_stats = dataset('file',strcat(folder, 'lateral_coronal_stats.txt'));
-% medial_coronal_stats = dataset('file',strcat(folder, 'medial_coronal_stats.txt'));
-% lateral_sagittal_stats = dataset('file',strcat(folder, 'lateral_sagittal_stats.txt'));
-% medial_sagittal_stats = dataset('file',strcat(folder, 'medial_sagittal_stats.txt'));
+% ind_FD_HOT = find(strcmp(lateral_coronal_stats.Properties.VariableNames, 'FD_HOT'));
 
 %% OA and non-OA separation
 
@@ -38,6 +36,8 @@ file = strcat(folder, 'Prestudy_Data.xlsx');
 [num, txt, raw] = xlsread(file);
 
 used_files = intersect(txt(:,1), lateral_coronal_stats.file);
+used_vars = 1:size(lateral_coronal_stats,2)-1;
+% used_vars = used_vars([1:ind_FD_HOT-1, ind_FD_HOT+1:end]);
 
 OA = zeros(numel(used_files), 1);
 to_process = [];
@@ -47,7 +47,7 @@ for i = 1:numel(used_files)
     row = find(strcmp(used_files(i), lateral_coronal_stats.file));
     
     if ~isempty(row)
-        if max(table2array(lateral_coronal_stats(row,1:end-1)))>0
+        if max(table2array(lateral_coronal_stats(row,used_vars)))>0
             to_process = [to_process, row];
         end
     end
@@ -63,10 +63,10 @@ m_sagittal_stats.OA = OA;
 
 OA = OA(to_process);
 
-lateral_coronal_stats = lateral_coronal_stats(to_process,:);
-lateral_sagittal_stats = lateral_sagittal_stats(to_process,:);
-medial_coronal_stats = medial_coronal_stats(to_process,:);
-medial_sagittal_stats = medial_sagittal_stats(to_process,:);
+lateral_coronal_stats = lateral_coronal_stats(to_process, used_vars);
+lateral_sagittal_stats = lateral_sagittal_stats(to_process, used_vars);
+medial_coronal_stats = medial_coronal_stats(to_process, used_vars);
+medial_sagittal_stats = medial_sagittal_stats(to_process, used_vars);
     
 % OA = [0; 0; 0; 1;... %ends with AH77
 %     1; 0; 0; 0; 1;... %ends with BT10
