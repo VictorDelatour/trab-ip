@@ -1,6 +1,6 @@
-function [ output_args ] = get_local_GLCM( image )
+function get_local_GLCM( image )
 
-mask_size = 11;
+mask_size = 7;
 len = .5*(mask_size - mod(7,2));
 
 [nrow, ncol] = size(image);
@@ -56,22 +56,32 @@ end
 figure(1)
 imshow(mat2gray(contrast_image));
 title('Contrast');
+waitforbuttonpress;
+close(1);
 
-figure(2)
+figure(1)
 imshow(mat2gray(correlation_image));
 title('Correlation');
+waitforbuttonpress;
+close(1);
 
-figure(3)
+figure(1)
 imshow(mat2gray(energy_image));
 title('Energy');
+waitforbuttonpress;
+close(1);
 
-figure(4)
+figure(1)
 imshow(mat2gray(homogeneity_image));
 title('Homogeneity');
+waitforbuttonpress;
+close(1);
 
-figure(5)
+figure(1)
 imshow(mat2gray(entropy_image));
 title('Entropy');
+waitforbuttonpress;
+close(1);
 
 
 
