@@ -3,12 +3,13 @@ cd '/Users/hugobabel/Desktop/TM CHUV/trab-ip/';
 %%
 folder = '/Users/hugobabel/Desktop/TM CHUV/Data/Prestudy/';
 
-
 %%
+
+% Attention! Inner radius = 4, outer radius = 16!
 warning('OFF', 'images:graycomatrix:scaledImageContainsNan');
 process_images(folder);
 
-%% Plot 
+%% Plot
 
 hgload('/Users/hugobabel/Desktop/TM CHUV/trab-ip/Figures/sagittal_medial_rois_cut_50.fig');
 waitfor(1)
@@ -37,6 +38,7 @@ file = strcat(folder, 'Prestudy_Data.xlsx');
 
 used_files = intersect(txt(:,1), lateral_coronal_stats.file);
 used_vars = 1:size(lateral_coronal_stats,2)-1;
+used_vars = used_vars(1:(end-6));
 % used_vars = used_vars([1:ind_FD_HOT-1, ind_FD_HOT+1:end]);
 
 OA = zeros(numel(used_files), 1);
@@ -53,8 +55,7 @@ for i = 1:numel(used_files)
     end
 end
 
-%%
-
+%% Add OA to lateral stats
 
 lateral_coronal_stats.OA = OA;
 medial_coronal_stats.OA = OA;
@@ -63,19 +64,12 @@ m_sagittal_stats.OA = OA;
 
 OA = OA(to_process);
 
-lateral_coronal_stats = lateral_coronal_stats(to_process, used_vars);
-lateral_sagittal_stats = lateral_sagittal_stats(to_process, used_vars);
-medial_coronal_stats = medial_coronal_stats(to_process, used_vars);
-medial_sagittal_stats = medial_sagittal_stats(to_process, used_vars);
-    
-% OA = [0; 0; 0; 1;... %ends with AH77
-%     1; 0; 0; 0; 1;... %ends with BT10
-%     1; 1; 1; 1; 0;... %ends with H362
-%     1; 1; 0; 1; 0;... %ends with P296
-%     0; 0; 1; 0;];
+lateral_coronal_stats = lateral_coronal_stats(to_process, [used_vars, end]);
+lateral_sagittal_stats = lateral_sagittal_stats(to_process, [used_vars, end]);
+medial_coronal_stats = medial_coronal_stats(to_process, [used_vars, end]);
+medial_sagittal_stats = medial_sagittal_stats(to_process, [used_vars, end]);
 
 %% Coronal - lateral
-
 
 data = lateral_coronal_stats;
 data.OA = nominal(OA, {'non-OA', 'OA'});
