@@ -25,7 +25,17 @@
 
 function [score, roi] = get_roi(region, idx_min, idx_max, image, mask, cort_layer, roi_height)
     
-    [nrow, ncol] = size(image);
+    [nrow, ~] = size(image);
+    
+    % Keep only largest connected component (CC):
+    CC = bwconncomp(mask);
+    if numel(CC.PixelIdxList) > 1
+        [~,idx] = max(cellfun(@numel,CC.PixelIdxList));
+        to_erase = [1:idx-1, idx+1:numel(CC.PixelIdxList)];
+        for ind = to_erase
+            mask(CC.PixelIdxList{ind}) = 0;
+        end
+    end
     
     % Get dimensions for the region of interest
     min_co = max(find(sum(mask, 1)>0, 1), idx_min);
@@ -36,6 +46,8 @@ function [score, roi] = get_roi(region, idx_min, idx_max, image, mask, cort_laye
     
     im_cut = image(min_ro:max_ro, min_co:max_co);
     ma_cut = mask(min_ro:max_ro, min_co:max_co);
+    
+
     
     len = size(im_cut, 2);
         
@@ -54,25 +66,30 @@ function [score, roi] = get_roi(region, idx_min, idx_max, image, mask, cort_laye
         end
         
         row = size(ma_cut,1);
-        while (sum(ma_cut(row,:)==0)>0)
-            ma_cut(row,:) = 1;
+        while row > 1
+            one_max = find(ma_cut(row,:)==1, 1, 'last');
+            if sum(ma_cut(row, 1:one_max)) == one_max
+                ma_cut(row:end, 1:one_max) = 1;
+                break;
+            end
+            
             row = row - 1;
+
         end
     end
     
-
-
-    
-
     %%
     m_roi = get_masked_roi(ma_cut(:, cols(1):cols(2)), cort_layer, roi_height);
 
     min_ro = max(find(sum(m_roi, 2)>0, 1), 1);
     max_ro = min(find(sum(m_roi, 2)>0, 1, 'last'), size(m_roi,1));
     
-    roi = mat2gray(im_cut(min_ro:max_ro, cols(1):cols(2)));
+    % Should it include mat2gray or not?
+    roi = im_cut(min_ro:max_ro, cols(1):cols(2));
+%     roi = mat2gray(im_cut(min_ro:max_ro, cols(1):cols(2)));
         
     roi(m_roi(min_ro:max_ro,:)==0) = NaN;
+    roi(ma_cut(min_ro:max_ro, cols(1):cols(2))==0) = NaN;
     
     %% Compute acceptability score
     % Measure # cols s.t. height of roi is not ~ maximal

@@ -116,56 +116,50 @@ for i = 1:n_files
     
     cort_layer = 10;
     roi_height = 50;
-    nslices = 1;
     
-    %% Sagittal  lateral
-    for shift = -.5*(nslices-1):.5*(nslices-1)
-        fprintf('Shift %i\n', shift);
-        
-        
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_lateral+shift,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_sagittal_lateral+shift,:)),90);
-        
-        [score_s_l , roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
-        
-        [~, bin_roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
-        
-        %% Sagittal medial
-        
-        image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial+shift,:)),90);
-        mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial+shift,:)),90);
-        
-        [score_s_m, roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
-        [~, bin_roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
-        
-        %% Coronal Lateral
-        
-        image = imrotate(squeeze(ProcessedData.DicomCube(slice_coronal_lateral+shift,:,:)), 90);
-        mask = imrotate(squeeze(masque_t(slice_coronal_lateral+shift,:,:)),90);
-        
-        [score_c_l, roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
-        
-        [~, bin_roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, binarize(mat2gray(image)), mask, cort_layer, roi_height);
-        
-        %% Coronal Medial
-        
-        image = imrotate(squeeze(ProcessedData.DicomCube(slice_coronal_medial+shift,:,:)),90);
-        mask = imrotate(squeeze(masque_t(slice_coronal_medial+shift,:,:)),90);
-        
-        [score_c_m, roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
-        
-        [~, bin_roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, binarize(mat2gray(image)), mask, cort_layer, roi_height);
-        %% Can we proceed with stats?
-        
-        thresh = .1;
-        
-        if max([score_s_l, score_s_m, score_c_l, score_c_m])>= thresh;
-            nslices = nslices-1;
-            continue
-        end
-        
-        %% Plot
-        %{
+    %% Sagittal lateral
+    
+    image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_lateral,:)),90);
+    mask = imrotate(squeeze(masque_t(:,slice_sagittal_lateral,:)),90);
+    
+    [score_s_l , roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
+    [~, bin_roi_sagittal_lateral] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
+    
+    %% Sagittal medial
+    
+    image = imrotate(squeeze(ProcessedData.DicomCube(:,slice_sagittal_medial,:)),90);
+    mask = imrotate(squeeze(masque_t(:,slice_sagittal_medial,:)),90);
+    
+    [score_s_m, roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), image, mask, cort_layer, roi_height);
+    [~, bin_roi_sagittal_medial] = get_roi('sagittal', 1, size(image,2), binarize(mat2gray(image)), mask, cort_layer, roi_height);
+    
+    %% Coronal Lateral
+    
+    image = imrotate(squeeze(ProcessedData.DicomCube(slice_coronal_lateral,:,:)), 90);
+    mask = imrotate(squeeze(masque_t(slice_coronal_lateral,:,:)),90);
+    
+    [score_c_l, roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, image, mask, cort_layer, roi_height);
+    [~, bin_roi_coronal_lateral] = get_roi('lateral', idx_min_lateral, idx_max_lateral, binarize(mat2gray(image)), mask, cort_layer, roi_height);
+    
+    %% Coronal Medial
+    
+    image = imrotate(squeeze(ProcessedData.DicomCube(slice_coronal_medial,:,:)),90);
+    mask = imrotate(squeeze(masque_t(slice_coronal_medial,:,:)),90);
+    
+    [score_c_m, roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, image, mask, cort_layer, roi_height);
+    [~, bin_roi_coronal_medial] = get_roi('medial', idx_min_medial, idx_max_medial, binarize(mat2gray(image)), mask, cort_layer, roi_height);
+    
+    %% Can we proceed with stats?
+    
+    thresh = .1;
+    
+    if max([score_s_l, score_s_m, score_c_l, score_c_m])>= thresh;
+        nslices = nslices-1;
+        continue
+    end
+    
+    %% Plot
+    %{
             figure(i_sagittal_lateral)
             subplot(n_plots, n_plots, i);
             imshow(mat2gray(roi_sagittal_lateral));
@@ -208,42 +202,30 @@ for i = 1:n_files
             subplot(n_plots, n_plots, i);
             imshow(bin_roi_coronal_medial);
             title(strcat(file_names{i}(1:7), '-c-m'));
-        %}
-        
-        %% Process each ROI to get information
-        
-        stats_coronal_lateral = get_stats(roi_coronal_lateral, bin_roi_coronal_lateral);
-        stats_coronal_medial = get_stats(roi_coronal_medial, bin_roi_coronal_medial);
-        
-        stats_sagittal_lateral = get_stats(roi_sagittal_lateral, bin_roi_sagittal_lateral);
-        stats_sagittal_medial = get_stats(roi_sagittal_medial, bin_roi_sagittal_medial);
-        
-        %%
+    %}
     
-        n_stats = numel(fieldnames(stats_coronal_lateral));
-        
-        coronal_stats(i, 1:n_stats) = coronal_stats(i, 1:n_stats) + cell2mat(struct2cell(stats_coronal_lateral))';
-        coronal_stats(i, (n_stats+1):end) = coronal_stats(i, (n_stats+1):end) + cell2mat(struct2cell(stats_coronal_medial))';
-        
-        sagittal_stats(i, 1:n_stats) = sagittal_stats(i, 1:n_stats) + cell2mat(struct2cell(stats_sagittal_lateral))';
-        sagittal_stats(i, (n_stats+1):end) = sagittal_stats(i, (n_stats+1):end) + cell2mat(struct2cell(stats_sagittal_medial))';
-    end
+    %% Process each ROI to get information
+    
+    stats_coronal_lateral = get_stats(roi_coronal_lateral, bin_roi_coronal_lateral);
+    stats_coronal_medial = get_stats(roi_coronal_medial, bin_roi_coronal_medial);
+    
+    stats_sagittal_lateral = get_stats(roi_sagittal_lateral, bin_roi_sagittal_lateral);
+    stats_sagittal_medial = get_stats(roi_sagittal_medial, bin_roi_sagittal_medial);
+    
     %%
-    if nslices > 0
-        coronal_stats(i, 1:n_stats) = coronal_stats(i, 1:n_stats)./nslices;
-        coronal_stats(i, (n_stats+1):end) = coronal_stats(i, (n_stats+1):end)./nslices;
-        sagittal_stats(i, 1:n_stats) = sagittal_stats(i, 1:n_stats)./nslices;
-        sagittal_stats(i, (n_stats+1):end) = sagittal_stats(i, (n_stats+1):end)./nslices;
-    else
-        continue;
-    end
-        
     
+    n_stats = numel(fieldnames(stats_coronal_lateral));
+    
+    coronal_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_coronal_lateral))';
+    coronal_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_coronal_medial))';
+    
+    sagittal_stats(i, 1:n_stats) = cell2mat(struct2cell(stats_sagittal_lateral))';
+    sagittal_stats(i, (n_stats+1):end) = cell2mat(struct2cell(stats_sagittal_medial))';
     
 end
 
-%% Combine statistical data to dataset
 
+%% Combine statistical data to dataset
 lateral_coronal_stats = array2table(coronal_stats(:, 1:n_stats), 'VariableNames', fieldnames(stats_coronal_lateral));
 medial_coronal_stats = array2table(coronal_stats(:, (n_stats+1):end), 'VariableNames', fieldnames(stats_coronal_medial));
 lateral_sagittal_stats = array2table(sagittal_stats(:, 1:n_stats), 'VariableNames', fieldnames(stats_sagittal_lateral));
