@@ -28,143 +28,15 @@ cd(folder);
 file_names = dir('*.mat');
 file_names = {file_names.name};
 
-cd(current_dir);
-
 n_files = numel(file_names);
 
-xv = zeros(n_files,1);
-yv = zeros(size(xv));
+row_medial = zeros(n_files,1);
+col_medial = zeros(size(row_medial));
+
+row_lateral = zeros(size(row_medial));
+col_lateral = zeros(size(row_medial));
 
 %%
-for i = 1:n_files
-    
-    fprintf('%s\n', file_names{i});
-    file_name = strcat(folder, file_names{i});
-    
-    data = load(file_name, 'masque_t', 'ProcessedData');
-    
-    masque_t = data.masque_t;
-    ProcessedData = data.ProcessedData;
-    
-    x_resolution = mean(diff(ProcessedData.X_Cube(1,:,1)));
-    y_resolution = mean(diff(ProcessedData.Y_Cube(:,1,1)));
-    
-    %% Get indices of lateral and medial cartilages
-    
-    v_ind_lateral = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.triangles);
-    v_ind_medial = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.triangles);
-    
-    mean_lateral_x = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1));     
-    mean_medial_x = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1));
-    
-    ind_X = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1)/x_resolution);
-    ind_Y = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,2)/y_resolution);
-    
-    if mean_lateral_x > mean_medial_x
-        ProcessedData.DicomCube = flip(ProcessedData.DicomCube,2);
-        masque_t = flip(masque_t,2);    
-        ind_X = size(ProcessedData.DicomCube,1) + 1 - ind_X;
-    end
-
-    %% Fill inside of mat
-    
-    mat = zeros(size(ProcessedData.DicomCube,1), size(ProcessedData.DicomCube,2));
-    mat(ind_Y + ind_X*size(ProcessedData.DicomCube,1)) = 1;
-    
-    row_min = find(sum(mat,2)>0,1);
-    row_max = find(sum(mat,2)>0, 1, 'last');
-    
-    for row = row_min:row_max
-        mat(row, find(mat(row,:)>0,1):find(mat(row,:)>0, 1, 'last')) = 1;
-    end
-    
-    rowInd = [];
-    colInd = [];
-    col_min = find(sum(mat,1)>0,1);
-    col_max = find(sum(mat,1)>0, 1, 'last');
-    
-    for col = col_min:col_max
-        nzRows = find(mat(:,col)>0,1):find(mat(:,col)>0, 1, 'last');
-        mat(nzRows, col) = 1;
-        
-        rowInd = [rowInd, nzRows];
-        colInd = [colInd, col*ones(1, numel(nzRows))];
-    end
-    
-    % The mask shoudl be filled and [I,J] contains all pixels 
-    
-    %%
-    
-    bone_surf_map = nan(size(mat));
-
-    for ind = 1:numel(rowInd)
-        res = find(masque_t(rowInd(ind), colInd(ind),:)>0, 1, 'last');
-        if numel(res) > 0
-            bone_surf_map(rowInd(ind), colInd(ind)) = find(masque_t(rowInd(ind), colInd(ind),:)>0, 1, 'last');
-        end
-    end
-   
-   
-    %%
-%     npts = 7;
-    npts = 5;
-    density_map = nan(size(mat));
-    r = 3;
-        
-    circle_list = find( (repmat(1:2*r+1, 2*r+1, 1)-(r+1)).^2 + (repmat([1:2*r+1]', 1, 2*r+1)-(r+1)).^2 <= r^2);
-    [Ic, Jc] = ind2sub([2*r+1, 2*r+1], circle_list);
-    [nrow, ncol, ~] = size(ProcessedData.DicomCube);
-    
-    for ind = 1:numel(rowInd)
-        
-        index_list = (colInd(ind)-1 + Jc-(r+1))*nrow + (rowInd(ind) + Ic - (r+1));
-        index_list = index_list(index_list > 0 & index_list < numel(ProcessedData.DicomCube));
-        index_list = index_list(~isnan(bone_surf_map(index_list)));
-        index_list = index_list(mat(index_list)>0); % To discard points out of mesh, but is it necessary?
-        %             density_map(rowInd(ind), colInd(ind)) = sum(sum(ProcessedData.DicomCube(bsxfun(@plus, index_list, (height - (0:npts-1))*nrow*ncol))));
-        if numel(index_list)>0
-            density_map(rowInd(ind), colInd(ind)) = sum(sum(ProcessedData.DicomCube(bsxfun(@plus, index_list, bsxfun(@minus, bone_surf_map(index_list), 0:npts-1)*nrow*ncol))));
-        end
-        
-%         height = bone_surf_map(rowInd(ind), colInd(ind));
-%         if ~isnan(height)
-%             density = 0;
-%             for row = -.5*(npts-1):.5*(npts-1)
-%                 for col =  -.5*(npts-1):.5*(npts-1)
-%                     density = density + sum(ProcessedData.DicomCube(rowInd(ind) + row, colInd(ind) + col, height - (0:npts-1)));
-%                 end
-%             end
-%             density_map(rowInd(ind), colInd(ind)) = density;
-%         end
-    end
-    
-    %%
-    
-    density_map = density_map(row_min:row_max, col_min:col_max);
-
-    [~, index] = max(density_map(:));
-    [maxRow, maxCol] = ind2sub(size(density_map), index);
-
-    figure(1);
-    imshow(mat2gray(density_map)); 
-    hold on;
-    plot(maxCol, maxRow,'r.','MarkerSize',20)
-    hold off
-    if i < numel(file_names)
-        fprintf('Press for next image\n');
-        waitforbuttonpress
-    end
-    
-    xv(i) = maxRow/size(density_map,1);
-    yv(i) = maxCol/size(density_map,2);
-    
-    
-end
-
-fprintf('Done\n');
-
-%%
-
 for i = 1:n_files
     file_names{i} = file_names{i}(1:7);
 end
@@ -186,37 +58,111 @@ full_OA = OA;
 
 %%
 
-xv_meanOA = median(xv(OA));
-xv_stdOA = std(xv(OA));
+file_names = dir('*.mat');
+file_names = {file_names.name};
 
-yv_meanOA = median(yv(OA));
-yv_stdOA = std(yv(OA));
+cd(current_dir);
+
+%%
+for i = 1:n_files
+    
+    fprintf('%s, OA: %i\n', file_names{i}, OA(i));
+    file_name = strcat(folder, file_names{i});
+    
+    data = load(file_name, 'masque_t', 'ProcessedData');
+    
+    masque_t = data.masque_t;
+    ProcessedData = data.ProcessedData;
+    
+    x_resolution = mean(diff(ProcessedData.X_Cube(1,:,1)));
+    y_resolution = mean(diff(ProcessedData.Y_Cube(:,1,1)));
+    
+    %% Get indices of lateral and medial cartilages
+    
+    v_ind_lateral = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.triangles);
+    v_ind_medial = unique(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.triangles);
+    
+    mean_lateral_x = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1));     
+    mean_medial_x = mean(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1));
+    
+    ind_X_medial = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,1)/x_resolution);
+    ind_Y_medial = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Medial.vertices(v_ind_medial,2)/y_resolution);
+    
+
+    ind_X_lateral = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,1)/x_resolution);
+    ind_Y_lateral = round(ProcessedData.FinalMesh.Tibia.Cartilage.Submeshes.Lateral.vertices(v_ind_lateral,2)/y_resolution);
+    
+    if mean_lateral_x > mean_medial_x
+        ProcessedData.DicomCube = flip(ProcessedData.DicomCube,2);
+        masque_t = flip(masque_t,2);    
+        ind_X_medial = size(ProcessedData.DicomCube,1) + 1 - ind_X_medial;
+        ind_X_lateral = size(ProcessedData.DicomCube,1) + 1 - ind_X_lateral;
+    end
+    
+    %% Medial
+    
+    fprintf('\nMedial... ');
+    
+    [row, col] = get_density(ProcessedData.DicomCube, masque_t, ind_X_medial, ind_Y_medial, 'medial');
+
+    row_medial(i) = row;
+    col_medial(i) = col;
+    
+    %% Lateral
+    
+    fprintf('\nLateral... ');
+    
+    [row, col] = get_density(ProcessedData.DicomCube, masque_t, ind_X_lateral, ind_Y_lateral, 'lateral');
+
+    
+    row_lateral(i) = row;
+    col_lateral(i) = col;
+    
+    
+end
+
+fprintf('Done\n');
 
 
-xv_meanNOA = median(xv(~OA));
-xv_stdNOA = std(xv(~OA));
+%%
 
-yv_meanNOA = median(yv(~OA));
-yv_stdNOA = std(yv(~OA));
+xv = col_medial;
+yv = row_medial;
 
-
-figure(1)
+figure(2)
 plot(xv(OA), yv(OA), 'ro', xv(~OA), yv(~OA), 'bx');
+axis([0 1 0 1]);
+title('Medial');
+xlabel('Lateral - Medial');
 hold on
-plot(xv_meanOA, yv_meanOA, 'ko', xv_meanNOA, yv_meanNOA, 'kx');
+plot(median(xv(OA)), median(yv(OA)), 'ko', median(xv(~OA)), median(yv(~OA)), 'kx');
 
-plot(xv_meanOA + [-1 1]*xv_stdOA, yv_meanOA*ones(2,1), '-r');
-plot(xv_meanOA*ones(2,1), yv_meanOA + [-1 1]*yv_stdOA, '-r');
+plot(median(xv(OA)) + [-1 1]*std(xv(OA)), median(yv(OA))*ones(2,1), '-r');
+plot(median(xv(OA))*ones(2,1), median(yv(OA)) + [-1 1]*std(yv(OA)), '-r');
 
-plot(xv_meanNOA + [-1 1]*xv_stdNOA, yv_meanNOA*ones(2,1), '-b');
-plot(xv_meanNOA*ones(2,1), yv_meanNOA + [-1 1]*yv_stdNOA, '-b');
+plot(median(xv(~OA)) + [-1 1]*std(xv(~OA)), median(yv(~OA))*ones(2,1), '-b');
+plot(median(xv(~OA))*ones(2,1), median(yv(~OA)) + [-1 1]*std(yv(~OA)), '-b');
 hold off
 
 %%
 
+xv = 1 - col_lateral;
+yv = row_lateral;
 
+figure(2)
+plot(xv(OA), yv(OA), 'ro', xv(~OA), yv(~OA), 'bx');
+axis([0 1 0 1]);
+title('Lateral');
+xlabel('Lateral - Medial');
+hold on
+plot(median(xv(OA)), median(yv(OA)), 'ko', median(xv(~OA)), median(yv(~OA)), 'kx');
 
+plot(median(xv(OA)) + [-1 1]*std(xv(OA)), median(yv(OA))*ones(2,1), '-r');
+plot(median(xv(OA))*ones(2,1), median(yv(OA)) + [-1 1]*std(yv(OA)), '-r');
 
+plot(median(xv(~OA)) + [-1 1]*std(xv(~OA)), median(yv(~OA))*ones(2,1), '-b');
+plot(median(xv(~OA))*ones(2,1), median(yv(~OA)) + [-1 1]*std(yv(~OA)), '-b');
+hold off
 
 
 end
