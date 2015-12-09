@@ -114,10 +114,8 @@ for i = 1:n_files
     
     [row, col] = get_density(ProcessedData.DicomCube, masque_t, ind_X_lateral, ind_Y_lateral, 'lateral');
 
-    
     row_lateral(i) = row;
     col_lateral(i) = col;
-    
     
 end
 
@@ -163,6 +161,5 @@ plot(median(xv(OA))*ones(2,1), median(yv(OA)) + [-1 1]*std(yv(OA)), '-r');
 plot(median(xv(~OA)) + [-1 1]*std(xv(~OA)), median(yv(~OA))*ones(2,1), '-b');
 plot(median(xv(~OA))*ones(2,1), median(yv(~OA)) + [-1 1]*std(yv(~OA)), '-b');
 hold off
-
 
 end
