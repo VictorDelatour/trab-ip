@@ -13,8 +13,10 @@ else
     data = load(full_file_names{index});
     fprintf('Loaded\n');
 
-%     image = imrotate(data.meshData.femur.cartThicknessMap, 90);
-    image = imrotate(data.meshData.tibia.cartThicknessMap, -90);
+%     image = imrotate(data.meshData.tibia.subBoneDensityMap, -90);
+    image = cell(2,1);
+    image{1} = imrotate(data.meshData.tibia.subBoneDensityMap, -90);
+    image{2} = imrotate(data.meshData.tibia.cartThicknessMap, -90);
     
     image_list{index} = image;
     loaded_images(index) = true;

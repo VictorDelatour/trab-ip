@@ -154,7 +154,7 @@ for i = 1:n_files
     thresh = .1;
     
     if max([score_s_l, score_s_m, score_c_l, score_c_m])>= thresh;
-        nslices = nslices-1;
+%         nslices = nslices-1;
         continue
     end
     

@@ -1,4 +1,4 @@
-function showfig( v,t )
+function showfig( v, t )
 % figure;
 h1 = trisurf(t,v(:,1),v(:,2),v(:,3),1,'Marker','.','MarkerSize',15);
 colour1 = repmat([0.83 0.82 0.28],length(v),1);

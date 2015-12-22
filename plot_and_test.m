@@ -1,6 +1,6 @@
 function [sig_vars] = plot_and_test(view, region, data, factor)
 
-nvar = size(data,2) - 2;
+nvar = size(data,2) - 1;
 nrow = size(data,1);
 
 OA = (1:nrow) .* factor';
@@ -40,7 +40,7 @@ for variable = 1:nvar
     
 end
 
-close(1);
+% close(1);
 
 sig_vars = var_list(sig_and_p(1,:) == 1); % Doesn't show anything
 

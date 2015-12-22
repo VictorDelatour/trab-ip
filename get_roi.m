@@ -57,9 +57,9 @@ function [score, roi] = get_roi(region, idx_min, idx_max, image, mask, cort_laye
         row_b = find(diff(sum(ma_cut>0,2))<0,1);
         ma_cut(row_b+1:end,:) = 1;
     else
-        if strcmp(region, 'medial')
+        if strcmp(region, 'lateral') % Careful, this is probably new
             cols = 1 + [0, round(.75*len)];
-        elseif strcmp(region, 'lateral')
+        elseif strcmp(region, 'medial')
             cols = [round(.25*len), len];
         else
             % Output error message
